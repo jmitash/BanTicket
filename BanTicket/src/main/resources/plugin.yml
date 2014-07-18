@@ -1,0 +1,10 @@
+name: BanTicket
+main: com.knoxcorner.banticket.BanTicket
+version: 1.0
+description: Versatile and thorough ban management system
+commands:
+    bt:
+        description: Displays BanTicket related commands
+        usage: /bt <subcategory> <applicaple arguments>
+#        permission: sping.command.main
+#        permission-message: You don't have permission to use that. 
