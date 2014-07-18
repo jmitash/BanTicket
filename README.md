@@ -1,4 +1,5 @@
 BanTicket
 =========
 
-Bukkit ban management plugin
+Bukkit Ban Management Plugin
+
