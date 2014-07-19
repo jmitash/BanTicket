@@ -2,7 +2,8 @@ package com.knoxcorner.banticket.io;
 
 import java.io.File;
 
-import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.configuration.file.FileConfiguration;
+
 
 import com.knoxcorner.banticket.BanTicket;
 import com.knoxcorner.banticket.util.Util;
@@ -29,7 +30,7 @@ public class ConfigManager
 	{
 		if(!configFile.exists())
 			this.saveConfig();
-		YamlConfiguration config = YamlConfiguration.loadConfiguration(configFile);
+		FileConfiguration config = pl.getConfig();
 		this.approveOnExpire = config.getBoolean("ApproveOnExpire", false);
 		String timeToExpire = config.getString("ExpireTime", "2d0h0m0s");
 		long msToExpire = Util.msFromTime(timeToExpire);
@@ -51,7 +52,7 @@ public class ConfigManager
 			return;
 		}
 		
-		YamlConfiguration config = YamlConfiguration.loadConfiguration(configFile);
+		FileConfiguration config = pl.getConfig();
 		config.set("ApproveOnExpire", this.approveOnExpire);
 		config.set("ExpireTime", this.prevExpireTime);
 	}
