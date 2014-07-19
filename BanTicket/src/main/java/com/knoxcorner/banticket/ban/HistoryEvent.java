@@ -15,6 +15,18 @@ public class HistoryEvent
 	private long banTime;
 	private String extraInfo;
 	
+	public HistoryEvent(Ban ban)
+	{
+		this.event = ban.getReason();
+		this.eventType = ban.getType();
+		this.calendar = Calendar.getInstance();
+		this.extraInfo = ban.getInfo();
+		if(ban.getType() == BanType.TEMPBAN)
+		{
+			this.banTime = ((TemporaryBan) ban).getEndTime() - System.currentTimeMillis(); //new bans only
+		}
+	}
+	
 	/**
 	 * Creates an event at the current time<br>NOTE: TEMPBANS SHOULD USE TEMPBAN CONSTRUCTOR
 	 * @param type ban type
@@ -25,6 +37,7 @@ public class HistoryEvent
 		this.calendar = Calendar.getInstance();
 		this.event = event;
 		this.eventType = type;
+		
 	}
 	
 	/**
@@ -61,7 +74,10 @@ public class HistoryEvent
 	
 	public String getExtraInfo()
 	{
-		return this.extraInfo;
+		if(this.extraInfo == null)
+			return "No extra info available.";
+		else
+			return this.extraInfo;
 	}
 	
 	public String getEvent()
@@ -84,6 +100,11 @@ public class HistoryEvent
 		}
 		
 		return label;
+	}
+	
+	public long getBanTime()
+	{
+		return this.banTime;
 	}
 	
 	public BanType getEventType()

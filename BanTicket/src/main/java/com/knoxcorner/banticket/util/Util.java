@@ -72,6 +72,11 @@ public class Util
 		return retPlayers;
 	}
 	
+	/**
+	 * Converts time in milliseconds to human-readable format 
+	 * @param l time in milliseconds
+	 * @return Time in 0d0h0m0s format
+	 */
 	public static String msToTime(long l)
 	{
 		long days = l / 1000 / 60 / 60 / 24;
@@ -82,6 +87,106 @@ public class Util
 		l -= mins * 60 * 1000;
 		long secs = l / 1000;
 		return String.format("%dd%dh%dm%ds", days, hours, mins, secs);
+	}
+	
+	public static long msFromTime(String time)
+	{
+		if(time == null || time.length() <= 1)
+			return -1;
+		
+		//Make sure time doesn't have any illegal chars
+		char[] chars = time.toLowerCase().toCharArray();
+		for(int i = 0; i < chars.length; i++)
+		{
+			if(!"0123456789dhms".contains(Character.toString(chars[i])))
+			{
+				return -1;
+			}
+		}
+		
+		int days = 0, hours = 0, mins = 0, secs = 0;
+		
+		int offset = 0;
+		String temp;
+		while(offset < chars.length)
+		{
+			temp = "";
+			for(int i = offset; i < chars.length; i++)
+			{
+				String chr = Character.toString(chars[i]);
+				if(i == 0 && "dhms".contains(chr)) //No empty labels
+				{
+					return -1;
+				}
+				
+				if("0123456789".contains(chr)) //number
+				{
+					temp += chr;
+					continue;
+				}
+				
+				if(chars[i] == 'd')
+				{
+					try
+					{
+						days += Integer.parseInt(temp);
+						offset = i + 1;
+						break;
+					}
+					catch (NumberFormatException nfe)
+					{
+						return -1;
+					}
+				}
+				else if(chars[i] == 'h')
+				{
+					try
+					{
+						hours += Integer.parseInt(temp);
+						offset = i + 1;
+						break;
+					}
+					catch (NumberFormatException nfe)
+					{
+						return -1;
+					}
+				}
+				else if(chars[i] == 'm')
+				{
+					try
+					{
+						mins += Integer.parseInt(temp);
+						offset = i + 1;
+						break;
+					}
+					catch (NumberFormatException nfe)
+					{
+						return -1;
+					}
+				}
+				else if(chars[i] == 's')
+				{
+					try
+					{
+						secs += Integer.parseInt(temp);
+						offset = i + 1;
+						break;
+					}
+					catch (NumberFormatException nfe)
+					{
+						return -1;
+					}
+				}
+			}
+		}
+		
+		 
+		return	(1000 * secs)
+				+ (1000 * 60 * mins)
+				+ (1000 * 60 * 60 * hours)
+				+ (1000 * 60 * 60 * 24 * days);
+		
+		
 	}
 	
 }

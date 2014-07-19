@@ -10,9 +10,17 @@ import org.bukkit.OfflinePlayer;
 public class PermanentBan extends Ban
 {
 
+	/**
+	 * Permanent ban constructor
+	 * @param playerUUID player-to-be-banned's UUID
+	 * @param reason reason for ban
+	 * @param info supplementary info about this player's ban
+	 * @param bannerUUID UUID of player who entered ban command, or null for console
+	 * @param banIp true for IP ban, otherwise false
+	 */
 	public PermanentBan(UUID playerUUID, String reason, String info, UUID bannerUUID, boolean ipban)
 	{
-		super(playerUUID, reason, info, bannerUUID, ipban);
+		super(playerUUID, reason, info, bannerUUID, ipban, BanType.PERMBAN);
 	}
 
 	@Override
@@ -99,7 +107,7 @@ public class PermanentBan extends Ban
 	@Override
 	public String getBanMessage()
 	{
-		return "Permenantly Banned for:\n"
+		return "Permanently Banned for:\n"
 		+ this.getReason()
 		+ "\nExtra info:\n"
 		+ this.getInfo();

@@ -1,0 +1,17 @@
+###########################################
+##### BanTicket Ban Management System #####
+###########################################
+
+#This sets how long BanTickets should last without approval/denial
+ExpireTime: 2d0h0m0s
+
+#This sets the action that will be taken if the ticket expires
+ApproveOnExpire: false
+
+
+
+
+
+
+#DO NOT CHANGE, this is for use by the plugin only. Changing it may erase this config file
+ConfigVersion: 1

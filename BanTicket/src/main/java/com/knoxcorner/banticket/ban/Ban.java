@@ -16,8 +16,10 @@ public abstract class Ban
 	private String info;
 	private UUID playerUUID;
 	private UUID bannerUUID;
-	private OfflinePlayer player;
 	private boolean banIp;
+	private BanType banType;
+	private OfflinePlayer player;
+	
 	
 	/**
 	 * Default ban constructor
@@ -27,7 +29,7 @@ public abstract class Ban
 	 * @param bannerUUID UUID of player who entered ban command, or null for console
 	 * @param banIp true for IP ban, otherwise false
 	 */
-	public Ban(UUID playerUUID, String reason, String info, UUID bannerUUID, boolean banIp)
+	public Ban(UUID playerUUID, String reason, String info, UUID bannerUUID, boolean banIp, BanType type)
 	{
 		Player possiblePlayer = BanTicket.banTicket.getServer().getPlayer(playerUUID); //Check online players first
 		if(possiblePlayer != null)
@@ -44,6 +46,7 @@ public abstract class Ban
 		this.banIp = banIp;
 		this.playerUUID = playerUUID;
 		this.bannerUUID = bannerUUID;
+		this.banType = type;
 	}
 	
 	/**
@@ -102,6 +105,11 @@ public abstract class Ban
 	public boolean isIpBan()
 	{
 		return banIp;
+	}
+	
+	public BanType getType()
+	{
+		return this.banType;
 	}
 	
 

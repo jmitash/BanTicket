@@ -12,18 +12,27 @@ import com.knoxcorner.banticket.util.Util;
 public class TemporaryBan extends Ban
 {
 
-	private Date endTime;
+	private long endTime;
 	
-	public TemporaryBan(UUID playerUUID, String reason, String info, UUID bannerUUID, boolean banIp, Date endTime)
+	/**
+	 * Temporary ban constructor
+	 * @param playerUUID player-to-be-banned's UUID
+	 * @param reason reason for ban
+	 * @param info supplementary info about this player's ban
+	 * @param bannerUUID UUID of player who entered ban command, or null for console
+	 * @param banIp true for IP ban, otherwise false
+	 * @param endTime ban's expire time in standard ms time
+	 */
+	public TemporaryBan(UUID playerUUID, String reason, String info, UUID bannerUUID, boolean banIp, long endTime)
 	{
-		super(playerUUID, reason, info, bannerUUID, banIp);
+		super(playerUUID, reason, info, bannerUUID, banIp, BanType.TEMPBAN);
 		this.endTime = endTime;
 	}
 
 	@Override
 	public boolean isOver()
 	{
-		return new Date().after(endTime);
+		return System.currentTimeMillis() > endTime;
 	}
 
 	@Override
@@ -64,7 +73,7 @@ public class TemporaryBan extends Ban
 				.getBanList(BanList.Type.NAME).addBan(
 						getOfflinePlayer().getName(),
 						this.getReason(),
-						endTime,
+						new Date(endTime),
 						banSource);
 				return 0; //No issue
 			}
@@ -87,6 +96,11 @@ public class TemporaryBan extends Ban
 			return 1;
 		}
 	}
+	
+	public long getEndTime()
+	{
+		return this.endTime;
+	}
 
 	@Override
 	public boolean isPending()
@@ -97,7 +111,7 @@ public class TemporaryBan extends Ban
 	@Override
 	public String getBanMessage()
 	{
-		return Util.msToTime(endTime.getTime() - System.currentTimeMillis()) + 
+		return Util.msToTime(endTime - System.currentTimeMillis()) + 
 		" remaining; You have been banned for\n"
 		+ this.getReason()
 		+ "\nExtra info:\n"

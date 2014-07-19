@@ -58,17 +58,37 @@ public class BTPlayer
 		this.bans = new BanList();
 		this.history = new LinkedList<HistoryEvent>();
 		this.history.add(new HistoryEvent(BanType.INFO, "First join"));
+		this.addIP(ip);
+		this.addName(name);
 	}
 	
 	public void addIP(String IP)
 	{
-		this.ipMap.put(IP, ipMap.get(IP) + 1);
+		if(this.ipMap.containsKey(IP))
+			this.ipMap.put(IP, ipMap.get(IP) + 1);
+		else
+			this.ipMap.put(IP, 1);
 	}
 	
 	public void addName(String name)
 	{
-		if(!prevNamesMap.values().toArray()[prevNamesMap.size() - 1].equals(name)) //Grab most recent - if name hasn't changed
+		Object[] vals = prevNamesMap.values().toArray();
+		if(vals.length > 0) //Grab most recent - if name hasn't changed
+		{
+			if(!vals[vals.length - 1].equals(name))
+				prevNamesMap.put(System.currentTimeMillis(), name);
+		}
+		else
+		{
 			prevNamesMap.put(System.currentTimeMillis(), name);
+		}
+			
+			
+	}
+	
+	public String getMostRecentName()
+	{
+		return (String) prevNamesMap.values().toArray()[prevNamesMap.size() - 1];
 	}
 	
 	public LinkedList<HistoryEvent> getHistory()
@@ -93,6 +113,9 @@ public class BTPlayer
 			if(!prevBan.isOver())
 				return 3; //Can't ban player again
 		}
+		
+		this.bans.add(ban);
+		this.history.add(new HistoryEvent(ban));
 		
 		byte success = ban.setOnServerBanList(true);
 		Player player;

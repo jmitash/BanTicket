@@ -8,6 +8,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.knoxcorner.banticket.ban.PermanentBan;
+import com.knoxcorner.banticket.io.ConfigManager;
+import com.knoxcorner.banticket.io.PlayerSaveManager;
 import com.knoxcorner.banticket.listener.BTPlayer;
 import com.knoxcorner.banticket.util.BanList;
 import com.knoxcorner.banticket.util.Util;
@@ -15,17 +17,24 @@ import com.knoxcorner.banticket.util.Util;
 public class BanTicket extends JavaPlugin
 {
 	public static BanTicket banTicket;
-	public BanList bans;
+	
+	private ConfigManager cm;
+	private PlayerSaveManager playerSaveManager;
 
+	@Override
 	public void onEnable()
 	{
 		banTicket = this;
-		bans = new BanList();
+		cm = new ConfigManager(this);
+		playerSaveManager = new PlayerSaveManager(this);
+		cm.loadConfig();
+		
 	}
 	
+	@Override
 	public void onDisable()
 	{
-		
+		cm.saveConfig();
 	}
 	
 	@Override
@@ -33,7 +42,6 @@ public class BanTicket extends JavaPlugin
 	{
 		if(!cmd.getName().equalsIgnoreCase("bt"))
 			return false;
-		
 		if(args.length == 0)
 		{
 			sender.sendMessage(ChatColor.BLUE + "No help yet :(");
@@ -53,16 +61,24 @@ public class BanTicket extends JavaPlugin
 		}
 		if(player != null)
 		{
-			PermanentBan pb = new PermanentBan(player.getUniqueId(),
+			/*PermanentBan pb = new PermanentBan(player.getUniqueId(),
 					"LOL WHY NOT",
 					"Beep", 
 					(sender instanceof Player) ? ((Player) sender).getUniqueId() : null,
 					false);
 			
-			BTPlayer btpl = new BTPlayer(player.getUniqueId(), player.getPlayer().getAddress().toString(), player.getName());
+			BTPlayer btpl = new BTPlayer(player.getUniqueId(), player.getPlayer().getAddress().getAddress().getHostAddress(), player.getName());
 			btpl.addBan(pb);
+			playerSaveManager.savePlayer(btpl);*/
+			playerSaveManager.loadPlayer(player.getUniqueId());
 		}
 		return true;
+	}
+	
+	
+	public PlayerSaveManager getPlayerSaveManager()
+	{
+		return playerSaveManager;
 	}
 	
 	
