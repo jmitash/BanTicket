@@ -81,6 +81,11 @@ public class BanTicket extends JavaPlugin
 		return playerSaveManager;
 	}
 	
+	public ConfigManager getConfigManager()
+	{
+		return this.cm;
+	}
+	
 	
 	
 }

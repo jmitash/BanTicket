@@ -119,6 +119,21 @@ public abstract class Ban
 	
 	public abstract boolean isPending();
 	
+	
+	/**
+	 * Tells whether the ban has run out of approval time
+	 * @return true if expired, false otherwise
+	 */
+	public boolean isExpired()
+	{
+		return false;
+	}
+	
+	public Ban expire()
+	{
+		return null;
+	}
+	
 	public abstract String getBanMessage();
 	
 	/**

@@ -396,7 +396,6 @@ public class PlayerSaveManager
 				{
 					//TODO: Implement pending bans
 				}
-				System.out.println(ban.getUUID() + "\t" + ban.getReason() + "\t" + ban.getInfo() + "\t" + ban.getType());
 				bans.add(ban);
 				
 				
