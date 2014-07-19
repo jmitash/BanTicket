@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.UUID;
 
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
 import com.knoxcorner.banticket.BanTicket;
@@ -42,6 +43,22 @@ public class BTPlayer
 		this.prevNamesMap = prevNames;
 		this.bans = bans;
 		this.history = history;
+		
+		
+		OfflinePlayer player = BanTicket.banTicket.getServer().getOfflinePlayer(uuid);
+		if(player != null && !player.isBanned())
+		{
+			for(Ban ban : bans)
+			{
+				if(!ban.isOver())
+				{
+					BanTicket.banTicket.getLogger().warning(player.getName() + " is banned by BanTicket, but not Bukkit; Banning");
+					BanTicket.banTicket.getLogger().info("UUID: " + uuid.toString());
+					ban.setOnServerBanList(true);
+					break;
+				}
+			}
+		}
 	}
 	
 	/**
