@@ -126,6 +126,32 @@ public class PlayerSaveManager
 			}	
 		}
 		
+		if(ips == null)
+		{
+			pl.getLogger().severe("IPs failed to load in file " + file.getPath());
+			return null;
+		}
+		if(prevNames == null)
+		{
+			pl.getLogger().severe("Previous names failed to load in file " + file.getPath());
+			return null;
+		}
+		if(banList == null)
+		{
+			pl.getLogger().severe("Bans failed to load in file " + file.getPath());
+			return null;
+		}
+		if(history == null)
+		{
+			pl.getLogger().severe("History failed to load in file " + file.getPath());
+			return null;
+		}
+		if(lastIp == null)
+		{
+			pl.getLogger().severe("Last IP failed to load in file " + file.getPath());
+			return null;
+		}
+		
 		return new BTPlayer(uuid, ips, prevNames, banList, history, lastIp);
 	}
 
@@ -612,7 +638,7 @@ public class PlayerSaveManager
 		
 		
 		LinkedList<String> buffer = new LinkedList<String>();
-		buffer.add("IP TABLE:");
+		buffer.add("IP TABLE: " + player.getLastIp());
 
 		for(Map.Entry<String, Integer> entry : player.getIpMap().entrySet())
 		{

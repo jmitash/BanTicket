@@ -110,21 +110,6 @@ public class BTPlayer
 			
 	}
 	
-	public String getMostRecentName()
-	{
-		return (String) prevNamesMap.values().toArray()[prevNamesMap.size() - 1];
-	}
-	
-	public LinkedList<HistoryEvent> getHistory()
-	{
-		return this.history;
-	}
-	
-	public BanList getBans()
-	{
-		return this.bans;
-	}
-	
 	/**
 	 * Adds a ban to this player and activates it
 	 * @param ban the ban to add
@@ -139,7 +124,7 @@ public class BTPlayer
 		}
 		
 		this.bans.add(ban);
-		this.history.add(new HistoryEvent(ban));
+		this.addHistory(new HistoryEvent(ban));
 		
 		byte success = ban.setOnServerBanList(true);
 		Player player;
@@ -148,6 +133,26 @@ public class BTPlayer
 			player.kickPlayer(ban.getBanMessage());
 		}
 		return success;
+	}
+	
+	public void addHistory(HistoryEvent histEvent)
+	{
+		this.history.add(histEvent);
+	}
+
+	public String getMostRecentName()
+	{
+		return (String) prevNamesMap.values().toArray()[prevNamesMap.size() - 1];
+	}
+	
+	public LinkedList<HistoryEvent> getHistory()
+	{
+		return this.history;
+	}
+	
+	public BanList getBans()
+	{
+		return this.bans;
 	}
 	
 	public UUID getUUID()
@@ -170,6 +175,16 @@ public class BTPlayer
 		return Util.getCommonIps(ipMap, lastIp);
 	}
 	
+	public String getLastIp()
+	{
+		return this.lastIp;
+	}
+	
+	public void save()
+	{
+		BanTicket.banTicket.getPlayerSaveManager().savePlayer(this);
+	}
+	
 	public boolean equals(Object UUIDorPlayer)
 	{
 		if(UUIDorPlayer instanceof UUID)
@@ -182,6 +197,7 @@ public class BTPlayer
 		}
 		return false;
 	}
+	
 	
 	
 }
