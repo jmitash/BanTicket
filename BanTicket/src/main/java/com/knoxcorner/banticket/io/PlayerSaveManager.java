@@ -19,9 +19,12 @@ import java.util.UUID;
 import com.knoxcorner.banticket.BanTicket;
 import com.knoxcorner.banticket.ban.Ban;
 import com.knoxcorner.banticket.ban.BanType;
+import com.knoxcorner.banticket.ban.Expirable;
 import com.knoxcorner.banticket.ban.HistoryEvent;
 import com.knoxcorner.banticket.ban.PermanentBan;
+import com.knoxcorner.banticket.ban.PermanentBanRequest;
 import com.knoxcorner.banticket.ban.TemporaryBan;
+import com.knoxcorner.banticket.ban.TemporaryBanRequest;
 import com.knoxcorner.banticket.listener.BTPlayer;
 import com.knoxcorner.banticket.util.BanList;
 
@@ -30,8 +33,8 @@ public class PlayerSaveManager
 	private BanTicket pl;
 	private File saveFolder;
 	
-	private final static byte MIN_BAN_LINES = 3;
-	private final static byte MIN_HISTORY_LINES = 3;
+	private final static byte MAX_BAN_LINES = 7;
+	private final static byte MAX_HISTORY_LINES = 4;
 	
 	public PlayerSaveManager(BanTicket plugin)
 	{
@@ -82,7 +85,7 @@ public class PlayerSaveManager
 		LinkedHashMap<Long, String> prevNames = null;
 		BanList banList = null;
 		LinkedList<HistoryEvent> history = null;
-		for(int line = 0; line < buffer.size(); line++)
+		for(int line = 0; line < buffer.size(); line++) //TODO: versioning
 		{
 			if(buffer.get(line).equals("IP TABLE:"))
 			{
@@ -143,9 +146,12 @@ public class PlayerSaveManager
 			String info = null;
 			String lengthString = null;
 			
-			for(int i = lineOffset + lines; i < lineOffset + lines + MIN_HISTORY_LINES && i < buffer.size(); i++)
+			for(int i = lineOffset + lines; i < lineOffset + lines + MAX_HISTORY_LINES && i < buffer.size(); i++)
 			{
-				String curLine = buffer.get(i).substring(2);
+				String curLine = buffer.get(i);
+				if(!curLine.startsWith("\t\t")) //Too far
+					break;
+				curLine = curLine.substring(2);
 				if(curLine.startsWith("DATE: "))
 				{
 					dateString = curLine.replaceFirst("DATE: ", "");
@@ -232,8 +238,7 @@ public class PlayerSaveManager
 			
 			he.setExtraInfo(info);
 			history.add(he);
-			System.out.println(he.getEventType() + "\t" + he.getEvent() + "\t" + he.getExtraInfo() + "\t" + he.getCalendar().getTimeInMillis());
-			lines += MIN_HISTORY_LINES;
+			lines++;
 		}
 		return history;
 	}
@@ -261,18 +266,21 @@ public class PlayerSaveManager
 				boolean isFull = false;
 				boolean isIp = false;
 				boolean isPerm = false;
-				long banLength = -1;
-				
+				long banEnd = -1;
+				long startTime = -1;
+				long expTime = -1;
+				boolean aoe = false;
 				
 				String ticketType = parts[0];
 				String idType = parts[1];
 				String lengthType = parts[2];
 				String length = null;
+				
 				if(parts.length == 4)
 					length = parts[3];
 				
 				//Check data
-				if(!ticketType.equals("FULL") && !ticketType.equals("PENDING"))
+				if(!ticketType.equals("FULL") && !ticketType.equals("REQUEST"))
 				{
 					pl.getLogger().severe("\"" + ticketType + "\": bad formatting on line " + (lineOffset + lines) + " of " + file.getPath());
 					pl.getLogger().severe("WARNING: This player's ban will be removed from the file when saving, but will remain on Minecraft's ban list");
@@ -309,7 +317,7 @@ public class PlayerSaveManager
 				{
 					try
 					{
-						banLength = Long.parseLong(length);
+						banEnd = Long.parseLong(length);
 					} catch (NumberFormatException nfe)
 					{
 						pl.getLogger().severe("\"" + length + "\": illegal ban length on line " + (lineOffset + lines) + " of " + file.getPath());
@@ -322,8 +330,15 @@ public class PlayerSaveManager
 				String info = null;
 				String reason = null;
 				String buuid = null;
-				for(int i = lineOffset + lines + 1; i < buffer.size() && i < MIN_BAN_LINES + lineOffset + lines + 1; i++)
+				
+				String startString = null;
+				String expString = null;
+				String aoeString = null;
+				
+				for(int i = lineOffset + lines + 1; i < buffer.size() && i < MAX_BAN_LINES + lineOffset + lines + 1; i++)
 				{
+					if(!buffer.get(i).startsWith("\t\t")) //too far
+						break;
 					if(buffer.get(i).startsWith("\t\tINFO: "))
 					{
 						info = buffer.get(i).replaceFirst("\t\tINFO: ", "");
@@ -336,37 +351,89 @@ public class PlayerSaveManager
 					{
 						reason = buffer.get(i).replaceFirst("\t\tREASON: ", "");
 					}
+					else if(!isFull && buffer.get(i).startsWith("\t\tSTART: "))
+					{
+						startString = buffer.get(i).replaceFirst("\t\tSTART: ", "");
+					}
+					else if(!isFull && buffer.get(i).startsWith("\t\tEXPIRE: "))
+					{
+						expString = buffer.get(i).replaceFirst("\t\tEXPIRE: ", "");
+					}
+					else if(!isFull && buffer.get(i).startsWith("\t\tAOE: "))
+					{
+						aoeString = buffer.get(i).replaceFirst("\t\tAOE: ", "");
+					}
 					else
 					{
-						//TODO: Failsafe option
 						//TODO: Error logging, copy errored files
 						//TODO: Warn privileged
 						pl.getLogger().severe("\"" + buffer.get(i) + "\": illegal subcategory on line " + (lineOffset + lines) + " of " + file.getPath());
 						pl.getLogger().severe("WARNING: This player's ban will be removed from the file when saving, but will remain on Minecraft's ban list");
-						lines += MIN_BAN_LINES + 1;
+						lines++;
 						continue;
 					}
 				}
 				
 				if(info == null)
 				{
-					pl.getLogger().warning("Missing INFO subcatagory from line " + (lineOffset + lines) + " of " + file.getPath());
+					pl.getLogger().warning("Missing INFO subcatagory under line " + (lineOffset + lines) + " of " + file.getPath());
 				}
 				
 				if(reason == null)
 				{
-					pl.getLogger().severe("Missing REASON subcatagory from line " + (lineOffset + lines) + " of " + file.getPath());
+					pl.getLogger().severe("Missing REASON subcatagory under line " + (lineOffset + lines) + " of " + file.getPath());
 					pl.getLogger().severe("WARNING: This player's ban will be removed from the file when saving, but will remain on Minecraft's ban list");
-					lines += MIN_BAN_LINES + 1;
+					lines++;
 					continue;
 				}
 				
 				if(buuid == null)
 				{
-					pl.getLogger().warning("Missing BANNER UUID subcatagory from line " + (lineOffset + lines) + " of " + file.getPath());
+					pl.getLogger().warning("Missing BANNER UUID subcatagory under line " + (lineOffset + lines) + " of " + file.getPath());
 					pl.getLogger().warning("Will replace with console for banner UUID");
 					buuid = "CONSOLE";
 				}
+				
+				if(!isFull && startString == null)
+				{
+					pl.getLogger().severe("Missing START subcatagory under line " + (lineOffset + lines) + " of " + file.getPath());
+					pl.getLogger().severe("WARNING: This player's ban will be removed from the file when saving, but will remain on Minecraft's ban list");
+					lines++;
+					continue;
+				}
+				
+				if(!isFull && expString == null)
+				{
+					pl.getLogger().severe("Missing EXPIRE subcatagory under line " + (lineOffset + lines) + " of " + file.getPath());
+					pl.getLogger().severe("WARNING: This player's ban will be removed from the file when saving, but will remain on Minecraft's ban list");
+					lines++;
+					continue;
+				}
+				
+				if(!isFull && aoeString == null)
+				{
+					pl.getLogger().severe("Missing AOE subcatagory under line " + (lineOffset + lines) + " of " + file.getPath());
+					pl.getLogger().severe("WARNING: This player's ban will be removed from the file when saving, but will remain on Minecraft's ban list");
+					lines++;
+					continue;
+				}
+				
+				try
+				{
+					if(!isFull) //TODO: Expand to multiple try/catch
+					{
+						startTime = Long.parseLong(startString);
+						expTime = Long.parseLong(expString);
+						aoe = Boolean.parseBoolean(aoeString);
+					}
+				} catch (NumberFormatException nfe)
+				{
+					pl.getLogger().severe("Invalid subcatagory data under line " + (lineOffset + lines) + " of " + file.getPath());
+					pl.getLogger().severe("WARNING: This player's ban will be removed from the file when saving, but will remain on Minecraft's ban list");
+					lines++;
+					continue;
+				}
+					
 				
 				
 				UUID bannersUuid = null;
@@ -376,7 +443,7 @@ public class PlayerSaveManager
 						bannersUuid = UUID.fromString(buuid);
 				} catch (IllegalArgumentException iae)
 				{
-					pl.getLogger().severe("\"" + buuid + "\": invalid UUID from line " + (lineOffset + lines) + " of " + file.getPath());
+					pl.getLogger().severe("\"" + buuid + "\": invalid UUID under line " + (lineOffset + lines) + " of " + file.getPath());
 					pl.getLogger().warning("Will replace with console for banner UUID");
 				}
 				
@@ -389,18 +456,25 @@ public class PlayerSaveManager
 					}
 					else
 					{
-						ban = new TemporaryBan(playersUuid, reason, info, bannersUuid, isIp, banLength);
+						ban = new TemporaryBan(playersUuid, reason, info, bannersUuid, isIp, banEnd);
 					}
 				}
 				else
 				{
-					//TODO: Implement pending bans
+					if(isPerm)
+					{
+						ban = new PermanentBanRequest(playersUuid, reason, info, bannersUuid, isIp, startTime, expTime, aoe);
+					}
+					else
+					{
+						ban = new TemporaryBanRequest(playersUuid, reason, info, bannersUuid, isIp, banEnd, startTime, expTime, aoe);
+					}
 				}
 				bans.add(ban);
 				
 				
 			}
-			lines += MIN_BAN_LINES + 1;
+			lines++;
 		}
 		return bans;
 	}
@@ -524,8 +598,8 @@ public class PlayerSaveManager
 		for(Ban ban : player.getBans()) 
 		{
 			String label = "\t";
-			if(ban.isPending())
-				label += "PENDING";
+			if(ban.isRequest())
+				label += "REQUEST";
 			else
 				label += "FULL";
 			
@@ -550,6 +624,13 @@ public class PlayerSaveManager
 				buffer.add("\t\tBANNER UUID: " + ban.getBannerUUID().toString());
 			else
 				buffer.add("\t\tBANNER UUID: " + "CONSOLE");
+			if(ban.isRequest())
+			{
+				Expirable exp = ((Expirable) ban);
+				buffer.add("\t\tSTART: " + exp.getStartTime());
+				buffer.add("\t\tEXPIRE: " + exp.getExpireTime());
+				buffer.add("\t\tAOE: " + exp.getApproveOnExpire());
+			}
 			
 			
 		}
