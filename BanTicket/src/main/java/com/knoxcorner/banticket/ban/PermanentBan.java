@@ -99,12 +99,6 @@ public class PermanentBan extends Ban
 	}
 
 	@Override
-	public boolean isPending()
-	{
-		return false;
-	}
-
-	@Override
 	public String getBanMessage()
 	{
 		return "Permanently Banned for:\n"

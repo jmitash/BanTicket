@@ -117,23 +117,6 @@ public abstract class Ban
 	
 	public abstract boolean isPermanent();
 	
-	public abstract boolean isPending();
-	
-	
-	/**
-	 * Tells whether the ban has run out of approval time
-	 * @return true if expired, false otherwise
-	 */
-	public boolean isExpired()
-	{
-		return false;
-	}
-	
-	public Ban expire()
-	{
-		return null;
-	}
-	
 	public abstract String getBanMessage();
 	
 	/**
@@ -141,7 +124,7 @@ public abstract class Ban
 	 * @param banned true if player should be banned, false if they should be unbanned
 	 * @return 0 - Success<br>1 - Success, but player hasn't logged in before<br>2 - Ban already exists/Not banned
 	 */
-	public abstract byte setOnServerBanList(boolean banned);
+	public abstract byte setOnServerBanList(boolean banned); //TODO: Unban
 	
 	
 	

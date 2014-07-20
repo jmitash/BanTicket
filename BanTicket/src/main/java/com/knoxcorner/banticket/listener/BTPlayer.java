@@ -46,7 +46,7 @@ public class BTPlayer
 		
 		
 		OfflinePlayer player = BanTicket.banTicket.getServer().getOfflinePlayer(uuid);
-		if(player != null && !player.isBanned())
+		if(player != null && !player.isBanned()) //Somehow unbanned on server
 		{
 			for(Ban ban : bans)
 			{
@@ -170,4 +170,6 @@ public class BTPlayer
 		}
 		return false;
 	}
+	
+	
 }

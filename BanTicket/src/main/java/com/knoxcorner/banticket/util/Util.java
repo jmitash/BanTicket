@@ -1,6 +1,8 @@
 package com.knoxcorner.banticket.util;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
 import com.knoxcorner.banticket.BanTicket;
 
@@ -186,7 +188,10 @@ public class Util
 				+ (1000 * 60 * 60 * hours)
 				+ (1000 * 60 * 60 * 24 * days);
 		
-		
 	}
 	
+	public static String getDate()
+	{
+		return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+	}
 }

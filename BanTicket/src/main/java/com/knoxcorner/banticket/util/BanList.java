@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.bukkit.OfflinePlayer;
 
 import com.knoxcorner.banticket.ban.Ban;
+import com.knoxcorner.banticket.ban.Expirable;
 
 @SuppressWarnings("serial")
 public class BanList extends ArrayList<Ban>
@@ -91,9 +92,44 @@ public class BanList extends ArrayList<Ban>
 			ban = this.get(i);
 			if(ban.getUUID().equals(uuid))
 			{
+				this.remove(i);
 				return ban.setOnServerBanList(false);
 			}
 		}
 		return -1; //not found
+	}
+	
+	public void update()
+	{
+		for(int i = 0; i < this.size(); i++)
+		{
+			Ban ban = this.get(i);
+			if(ban instanceof Expirable)
+			{
+				Expirable exp = (Expirable) ban;
+				if(exp.isExpired())
+				{
+					this.remove(i);
+					Ban newBan = exp.expire();
+					if(newBan != null)
+					{
+						this.add(newBan);
+						newBan.setOnServerBanList(true);
+					}
+				}
+			}
+		}
+	}
+	
+	public boolean hasActiveBan()
+	{
+		update();
+		for(Ban ban : this)
+		{
+			if(!ban.isOver())
+				return true;
+		}
+		
+		return false;
 	}
 }

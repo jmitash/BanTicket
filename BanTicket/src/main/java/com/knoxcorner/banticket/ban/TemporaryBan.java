@@ -102,11 +102,6 @@ public class TemporaryBan extends Ban
 		return this.endTime;
 	}
 
-	@Override
-	public boolean isPending()
-	{
-		return false;
-	}
 
 	@Override
 	public String getBanMessage()

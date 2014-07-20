@@ -15,8 +15,6 @@ public class ConfigManager
 	private BanTicket pl;
 	private File configFile;
 	
-	private String prevExpireTime;
-	
 	private long timeTillExpiry;
 	private boolean approveOnExpire;
 	
@@ -36,12 +34,10 @@ public class ConfigManager
 		long msToExpire = Util.msFromTime(timeToExpire);
 		if(msToExpire == -1)
 		{
-			pl.getLogger().severe("\"" + timeToExpire + "\" is not a valid time for ExpireTime. Tickets will not expire this run.");
-			msToExpire = Long.MAX_VALUE;
+			pl.getLogger().severe("\"" + timeToExpire + "\" is not a valid time for ExpireTime. Tickets will expire on default of 48 hours.");
+			msToExpire = Util.msFromTime("2d");
 		}
 		this.timeTillExpiry = msToExpire;
-		
-		this.prevExpireTime = timeToExpire;
 	}
 	
 	public void saveConfig()
@@ -54,7 +50,7 @@ public class ConfigManager
 		
 		FileConfiguration config = pl.getConfig();
 		config.set("ApproveOnExpire", this.approveOnExpire);
-		config.set("ExpireTime", this.prevExpireTime);
+		config.set("ExpireTime", Util.msToTime(timeTillExpiry));
 	}
 	
 	public long getExpireTime()

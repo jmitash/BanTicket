@@ -598,7 +598,7 @@ public class PlayerSaveManager
 		for(Ban ban : player.getBans()) 
 		{
 			String label = "\t";
-			if(ban.isRequest())
+			if(ban instanceof Expirable)
 				label += "REQUEST";
 			else
 				label += "FULL";
@@ -624,7 +624,7 @@ public class PlayerSaveManager
 				buffer.add("\t\tBANNER UUID: " + ban.getBannerUUID().toString());
 			else
 				buffer.add("\t\tBANNER UUID: " + "CONSOLE");
-			if(ban.isRequest())
+			if(ban instanceof Expirable)
 			{
 				Expirable exp = ((Expirable) ban);
 				buffer.add("\t\tSTART: " + exp.getStartTime());

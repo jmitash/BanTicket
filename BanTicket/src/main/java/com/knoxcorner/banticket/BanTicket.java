@@ -8,6 +8,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.knoxcorner.banticket.ban.PermanentBan;
+import com.knoxcorner.banticket.ban.PermanentBanRequest;
+import com.knoxcorner.banticket.ban.TemporaryBanRequest;
 import com.knoxcorner.banticket.io.ConfigManager;
 import com.knoxcorner.banticket.io.PlayerSaveManager;
 import com.knoxcorner.banticket.listener.BTPlayer;
@@ -60,16 +62,18 @@ public class BanTicket extends JavaPlugin
 			return true;
 		}
 		if(player != null)
-		{
-			/*PermanentBan pb = new PermanentBan(player.getUniqueId(),
-					"LOL WHY NOT",
-					"Beep", 
-					(sender instanceof Player) ? ((Player) sender).getUniqueId() : null,
-					false);
-			
+		{	
+			/*TemporaryBanRequest pbr = new TemporaryBanRequest(player.getUniqueId(),
+			"LOL WHY NOT",
+			"Beep", 
+			(sender instanceof Player) ? ((Player) sender).getUniqueId() : null,
+			false,
+			60000 + System.currentTimeMillis());
+	
 			BTPlayer btpl = new BTPlayer(player.getUniqueId(), player.getPlayer().getAddress().getAddress().getHostAddress(), player.getName());
-			btpl.addBan(pb);
+			btpl.addBan(pbr);
 			playerSaveManager.savePlayer(btpl);*/
+			
 			playerSaveManager.loadPlayer(player.getUniqueId());
 		}
 		return true;
