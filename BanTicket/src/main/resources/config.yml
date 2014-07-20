@@ -2,14 +2,54 @@
 ##### BanTicket Ban Management System #####
 ###########################################
 
-#This sets how long BanTickets should last without approval/denial
+#This sets how long Ban Requests should last without being approved or denied
+#Format 2d0h0m0s = 2 days, 0 hours, 0 minutes, 0 seconds
+#Note: This value follows the ban, meaning changes made after the ban is filed will not affect it
 ExpireTime: 2d0h0m0s
 
 #This sets the action that will be taken if the ticket expires
+#Note: This value follows the ban, meaning changes made after the ban is filed will not affect it
 ApproveOnExpire: false
 
 
 
+
+
+
+########################
+### ADVANCED OPTIONS ###
+########################
+
+#Most people will not need to change these
+
+#Will log each individual login to file
+#Note: This can make a save file really big; Not suggested unless necessary
+LogLogins: false
+
+#See above
+LogDisconnects: false
+
+#The plugin logs all IPs that the player logs in with
+#This helps IP ban people who have dynamic IPs that change constantly
+#The plugin will automatically pick the most commonly used IPs
+#EXCLUDES THE MOST RECENT, which will banned anyway
+#Use this to set a maximum of the number of IPs to ban
+#Set to 0 to only ban most recent only; Manually entered IPs will not be affected by this
+#Set to a high value if you want all IPs of this player banned
+BanXMostCommonIPs: 0
+
+
+#Minimum IP log ins to ban
+#The plugin also counts the number of log ins per IP
+#Setting this helps prevent banning places the banned person may have only been visiting
+#Excludes current/most recent IP
+#Set to 0 to ban "BanXMostCommonIPs" value excluding most recent
+#Manually entered IPs will not be affected by this
+MinLoginsFromIPToBan: 0
+
+#For above option
+#Sets the player's minimum number of total logins in order for the above to activate
+MinNumTotalLogins: 0
 
 
 

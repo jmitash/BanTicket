@@ -1,6 +1,7 @@
 package com.knoxcorner.banticket.ban;
 
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 import org.bukkit.BanList;
@@ -23,9 +24,9 @@ public class TemporaryBan extends Ban
 	 * @param banIp true for IP ban, otherwise false
 	 * @param endTime ban's expire time in standard ms time
 	 */
-	public TemporaryBan(UUID playerUUID, String reason, String info, UUID bannerUUID, boolean banIp, long endTime)
+	public TemporaryBan(UUID playerUUID, String reason, String info, UUID bannerUUID, List<String> ips, long endTime)
 	{
-		super(playerUUID, reason, info, bannerUUID, banIp, BanType.TEMPBAN);
+		super(playerUUID, reason, info, bannerUUID, ips, BanType.TEMPBAN);
 		this.endTime = endTime;
 	}
 
@@ -49,7 +50,7 @@ public class TemporaryBan extends Ban
 			return 2; //Already banned
 		}
 		
-		if(BanTicket.banTicket.getServer().getOfflinePlayer(getUUID()).hasPlayedBefore())
+		if(BanTicket.banTicket.getServer().getOfflinePlayer(getUUID()).hasPlayedBefore() && !this.isIpBan())
 		{
 			String banSource = null;
 			if(getBannerUUID() != null)
@@ -67,27 +68,25 @@ public class TemporaryBan extends Ban
 				banSource = "CONSOLE";
 			}
 			
-			if(!this.isIpBan())
+			if(this.isIpBan())
 			{
-				BanTicket.banTicket.getServer()
-				.getBanList(BanList.Type.NAME).addBan(
+				for(int i = 0; i < ips.size(); i++)
+				{
+					BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).addBan(
+							ips.get(i),
+							this.getReason(),
+							new Date(endTime),
+							banSource);
+				}
+				return 0;
+			}
+			else
+			{
+				BanTicket.banTicket.getServer().getBanList(BanList.Type.NAME).addBan(
 						getOfflinePlayer().getName(),
 						this.getReason(),
 						new Date(endTime),
 						banSource);
-				return 0; //No issue
-			}
-			else
-			{
-				//TODO: Add IP tracking
-				/*
-				BanTicket.banTicket.getServer()
-				.getBanList(BanList.Type.NAME).addBan(
-						getOfflinePlayer().,
-						this.getReason(),
-						endTime,
-						banSource);
-				*/
 				return 0;
 			}
 		}

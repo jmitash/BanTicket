@@ -27,6 +27,7 @@ import com.knoxcorner.banticket.ban.TemporaryBan;
 import com.knoxcorner.banticket.ban.TemporaryBanRequest;
 import com.knoxcorner.banticket.listener.BTPlayer;
 import com.knoxcorner.banticket.util.BanList;
+import com.knoxcorner.banticket.util.Util;
 
 public class PlayerSaveManager
 {
@@ -44,7 +45,17 @@ public class PlayerSaveManager
 			saveFolder.mkdir();
 	}
 	
-	public BTPlayer loadPlayer(UUID uuid) //TODO: Illegal data handling
+	public boolean playerExists(UUID uuid)
+	{
+		return new File(saveFolder, uuid.toString() + ".dat").exists();
+	}
+	
+	public BTPlayer loadPlayer(UUID uuid)
+	{
+		return loadPlayer(uuid, null);
+	}
+	
+	public BTPlayer loadPlayer(UUID uuid, String ip)
 	{
 		File file = new File(saveFolder, uuid.toString() + ".dat");
 		if(!file.exists())
@@ -85,10 +96,20 @@ public class PlayerSaveManager
 		LinkedHashMap<Long, String> prevNames = null;
 		BanList banList = null;
 		LinkedList<HistoryEvent> history = null;
+		String lastIp = null;
 		for(int line = 0; line < buffer.size(); line++) //TODO: versioning
 		{
-			if(buffer.get(line).equals("IP TABLE:"))
+			if(buffer.get(line).startsWith("IP TABLE: "))
 			{
+				String[] possibleIp = buffer.get(line).split(" ");
+				if(possibleIp.length < 3)
+				{
+					pl.getLogger().warning("\"" + buffer.get(line) + "\": missing last IP on line " + line + " of " + file.getPath());
+				}
+				else
+				{
+					lastIp = possibleIp[2];
+				}
 				ips = this.loadIps(line + 1, buffer, file);
 			}
 			else if(buffer.get(line).equals("PREVIOUS NAMES:"))
@@ -97,7 +118,7 @@ public class PlayerSaveManager
 			}
 			else if(buffer.get(line).equals("BAN LIST:"))
 			{
-				banList = this.loadBans(line + 1, buffer, file, uuid);
+				banList = this.loadBans(line + 1, buffer, file, uuid, ips, ip);
 			}
 			else if(buffer.get(line).equals("HISTORY:"))
 			{
@@ -105,7 +126,7 @@ public class PlayerSaveManager
 			}	
 		}
 		
-		return new BTPlayer(uuid, ips, prevNames, banList, history);
+		return new BTPlayer(uuid, ips, prevNames, banList, history, lastIp);
 	}
 
 	private LinkedList<HistoryEvent> loadHistory(int lineOffset, List<String> buffer, File file)
@@ -243,7 +264,7 @@ public class PlayerSaveManager
 		return history;
 	}
 	
-	private BanList loadBans(int lineOffset, List<String> buffer, File file, UUID playersUuid)
+	private BanList loadBans(int lineOffset, List<String> buffer, File file, UUID playersUuid, HashMap<String, Integer> ipMap, String ip)
 	{
 		int lines = 0;
 		BanList bans = new BanList();
@@ -420,19 +441,33 @@ public class PlayerSaveManager
 				
 				try
 				{
-					if(!isFull) //TODO: Expand to multiple try/catch
+					if(!isFull)
 					{
 						startTime = Long.parseLong(startString);
-						expTime = Long.parseLong(expString);
-						aoe = Boolean.parseBoolean(aoeString);
 					}
 				} catch (NumberFormatException nfe)
 				{
-					pl.getLogger().severe("Invalid subcatagory data under line " + (lineOffset + lines) + " of " + file.getPath());
+					pl.getLogger().severe("\"" + startTime + "\": invalid start time under line " + (lineOffset + lines) + " of " + file.getPath());
 					pl.getLogger().severe("WARNING: This player's ban will be removed from the file when saving, but will remain on Minecraft's ban list");
 					lines++;
 					continue;
 				}
+				
+				try
+				{
+					if(!isFull)
+					{
+						expTime = Long.parseLong(expString);
+					}
+				} catch (NumberFormatException nfe)
+				{
+					pl.getLogger().severe("\"" + startTime + "\": invalid expire time under line " + (lineOffset + lines) + " of " + file.getPath());
+					pl.getLogger().severe("WARNING: This player's ban will be removed from the file when saving, but will remain on Minecraft's ban list");
+					lines++;
+					continue;
+				}
+				
+				aoe = Boolean.parseBoolean(aoeString);
 					
 				
 				
@@ -447,27 +482,30 @@ public class PlayerSaveManager
 					pl.getLogger().warning("Will replace with console for banner UUID");
 				}
 				
+				
+				
 				Ban ban = null;
+				List<String> ips = isIp ? Util.getCommonIps(ipMap, ip) : null;
 				if(isFull)
 				{
 					if(isPerm)
 					{
-						ban = new PermanentBan(playersUuid, reason, info, bannersUuid, isIp);
+						ban = new PermanentBan(playersUuid, reason, info, bannersUuid, ips);
 					}
 					else
 					{
-						ban = new TemporaryBan(playersUuid, reason, info, bannersUuid, isIp, banEnd);
+						ban = new TemporaryBan(playersUuid, reason, info, bannersUuid, ips, banEnd);
 					}
 				}
 				else
 				{
 					if(isPerm)
 					{
-						ban = new PermanentBanRequest(playersUuid, reason, info, bannersUuid, isIp, startTime, expTime, aoe);
+						ban = new PermanentBanRequest(playersUuid, reason, info, bannersUuid, ips, startTime, expTime, aoe);
 					}
 					else
 					{
-						ban = new TemporaryBanRequest(playersUuid, reason, info, bannersUuid, isIp, banEnd, startTime, expTime, aoe);
+						ban = new TemporaryBanRequest(playersUuid, reason, info, bannersUuid, ips, banEnd, startTime, expTime, aoe);
 					}
 				}
 				bans.add(ban);
@@ -556,7 +594,6 @@ public class PlayerSaveManager
 			{
 				pl.getLogger().severe("Could not create: " + file.getPath());
 				pl.getLogger().throwing(getClass().getName(), "savePlayer", e); 
-				//TODO: Not sure if appropriate logging method
 				return;
 			}
 		}

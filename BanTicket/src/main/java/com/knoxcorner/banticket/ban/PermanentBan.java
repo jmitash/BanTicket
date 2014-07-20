@@ -2,6 +2,7 @@ package com.knoxcorner.banticket.ban;
 
 import com.knoxcorner.banticket.BanTicket;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.bukkit.BanList;
@@ -18,9 +19,9 @@ public class PermanentBan extends Ban
 	 * @param bannerUUID UUID of player who entered ban command, or null for console
 	 * @param banIp true for IP ban, otherwise false
 	 */
-	public PermanentBan(UUID playerUUID, String reason, String info, UUID bannerUUID, boolean ipban)
+	public PermanentBan(UUID playerUUID, String reason, String info, UUID bannerUUID, List<String> ips)
 	{
-		super(playerUUID, reason, info, bannerUUID, ipban, BanType.PERMBAN);
+		super(playerUUID, reason, info, bannerUUID, ips, BanType.PERMBAN);
 	}
 
 	@Override
@@ -30,6 +31,11 @@ public class PermanentBan extends Ban
 	}
 
 
+	/**
+	 * Will add a player to the server's own ban list
+	 * @param banned true if player should be banned, false if they should be unbanned
+	 * @return 0 - Success<br>1 - Success, but player hasn't logged in before<br>2 - Ban already exists/Not banned
+	 */
 	@Override
 	public byte setOnServerBanList(boolean banned)
 	{
@@ -39,12 +45,12 @@ public class PermanentBan extends Ban
 			return 0;
 		}
 		
-		if(BanTicket.banTicket.getServer().getBannedPlayers().contains(getOfflinePlayer()))
+		if(!banned && BanTicket.banTicket.getServer().getBannedPlayers().contains(getOfflinePlayer()))
 		{
 			return 2; //Already banned
 		}
 		
-		if(BanTicket.banTicket.getServer().getOfflinePlayer(getUUID()).hasPlayedBefore())
+		if(BanTicket.banTicket.getServer().getOfflinePlayer(getUUID()).hasPlayedBefore() && !this.isIpBan())
 		{
 			String banSource = null;
 			if(getBannerUUID() != null)
@@ -62,27 +68,25 @@ public class PermanentBan extends Ban
 				banSource = "CONSOLE";
 			}
 			
-			if(!this.isIpBan())
+			if(this.isIpBan())
 			{
-				BanTicket.banTicket.getServer()
-				.getBanList(BanList.Type.NAME).addBan(
+				for(int i = 0; i < ips.size(); i++)
+				{
+					BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).addBan(
+							ips.get(i),
+							this.getReason(),
+							null,
+							banSource);
+				}
+				return 0;
+			}
+			else
+			{
+				BanTicket.banTicket.getServer().getBanList(BanList.Type.NAME).addBan(
 						getOfflinePlayer().getName(),
 						this.getReason(),
 						null,
 						banSource);
-				return 0; //No issue
-			}
-			else
-			{
-				//TODO: Add IP tracking
-				/*
-				BanTicket.banTicket.getServer()
-				.getBanList(BanList.Type.NAME).addBan(
-						getOfflinePlayer().,
-						this.getReason(),
-						null,
-						banSource);
-				*/
 				return 0;
 			}
 		}

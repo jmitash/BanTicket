@@ -1,8 +1,10 @@
 package com.knoxcorner.banticket.listener;
 
+
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.UUID;
 
 import org.bukkit.OfflinePlayer;
@@ -13,6 +15,7 @@ import com.knoxcorner.banticket.ban.Ban;
 import com.knoxcorner.banticket.ban.HistoryEvent;
 import com.knoxcorner.banticket.ban.BanType;
 import com.knoxcorner.banticket.util.BanList;
+import com.knoxcorner.banticket.util.Util;
 
 
 
@@ -29,6 +32,7 @@ public class BTPlayer
 	private LinkedHashMap<Long, String> prevNamesMap;
 	private BanList bans;
 	private LinkedList<HistoryEvent> history;
+	private String lastIp;
 	
 	/**
 	 * Constructor for file load
@@ -36,17 +40,19 @@ public class BTPlayer
 	 * @param ipMap HashMap of IPs and login counts from them
 	 * @param prevNames Map of previous usernames and dates logged in with
 	 */
-	public BTPlayer(UUID uuid, HashMap<String, Integer> ipMap, LinkedHashMap<Long, String> prevNames, BanList bans, LinkedList<HistoryEvent> history)
+	public BTPlayer(UUID uuid, HashMap<String, Integer> ipMap, LinkedHashMap<Long, String> prevNames, BanList bans, LinkedList<HistoryEvent> history, String lastIp)
 	{
 		this.uuid = uuid;
 		this.ipMap = ipMap;
 		this.prevNamesMap = prevNames;
 		this.bans = bans;
 		this.history = history;
+		this.lastIp = lastIp;
 		
+		bans.update();
 		
 		OfflinePlayer player = BanTicket.banTicket.getServer().getOfflinePlayer(uuid);
-		if(player != null && !player.isBanned()) //Somehow unbanned on server
+		if(player.hasPlayedBefore() && !player.isBanned()) //Somehow unbanned on server
 		{
 			for(Ban ban : bans)
 			{
@@ -77,6 +83,7 @@ public class BTPlayer
 		this.history.add(new HistoryEvent(BanType.INFO, "First join"));
 		this.addIP(ip);
 		this.addName(name);
+		this.lastIp = ip;
 	}
 	
 	public void addIP(String IP)
@@ -156,6 +163,11 @@ public class BTPlayer
 	public LinkedHashMap<Long, String> getNameMap()
 	{
 		return this.prevNamesMap;
+	}
+	
+	public List<String> getCommonIps()
+	{		
+		return Util.getCommonIps(ipMap, lastIp);
 	}
 	
 	public boolean equals(Object UUIDorPlayer)

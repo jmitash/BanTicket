@@ -7,13 +7,10 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import com.knoxcorner.banticket.ban.PermanentBan;
-import com.knoxcorner.banticket.ban.PermanentBanRequest;
 import com.knoxcorner.banticket.ban.TemporaryBanRequest;
 import com.knoxcorner.banticket.io.ConfigManager;
 import com.knoxcorner.banticket.io.PlayerSaveManager;
 import com.knoxcorner.banticket.listener.BTPlayer;
-import com.knoxcorner.banticket.util.BanList;
 import com.knoxcorner.banticket.util.Util;
 
 public class BanTicket extends JavaPlugin
@@ -42,40 +39,7 @@ public class BanTicket extends JavaPlugin
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args)
 	{
-		if(!cmd.getName().equalsIgnoreCase("bt"))
-			return false;
-		if(args.length == 0)
-		{
-			sender.sendMessage(ChatColor.BLUE + "No help yet :(");
-			return true;
-		}
 		
-		String user = args[0];
-		OfflinePlayer player = Util.findOnlinePlayer(user);
-		boolean online = player != null;
-		
-		if(!online)
-		{
-			//Load file
-			//Check online
-			sender.sendMessage(ChatColor.RED + "Player not online");
-			return true;
-		}
-		if(player != null)
-		{	
-			/*TemporaryBanRequest pbr = new TemporaryBanRequest(player.getUniqueId(),
-			"LOL WHY NOT",
-			"Beep", 
-			(sender instanceof Player) ? ((Player) sender).getUniqueId() : null,
-			false,
-			60000 + System.currentTimeMillis());
-	
-			BTPlayer btpl = new BTPlayer(player.getUniqueId(), player.getPlayer().getAddress().getAddress().getHostAddress(), player.getName());
-			btpl.addBan(pbr);
-			playerSaveManager.savePlayer(btpl);*/
-			
-			playerSaveManager.loadPlayer(player.getUniqueId());
-		}
 		return true;
 	}
 	

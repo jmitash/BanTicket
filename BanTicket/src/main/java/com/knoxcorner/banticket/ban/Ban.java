@@ -1,9 +1,11 @@
 package com.knoxcorner.banticket.ban;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
+
 import com.knoxcorner.banticket.BanTicket;
 
 /**
@@ -19,7 +21,7 @@ public abstract class Ban
 	private boolean banIp;
 	private BanType banType;
 	private OfflinePlayer player;
-	
+	protected List<String> ips;
 	
 	/**
 	 * Default ban constructor
@@ -27,9 +29,9 @@ public abstract class Ban
 	 * @param reason reason for ban
 	 * @param info supplementary info about this player's ban
 	 * @param bannerUUID UUID of player who entered ban command, or null for console
-	 * @param banIp true for IP ban, otherwise false
+	 * @param ips list of IPs if IP ban, otherwise null
 	 */
-	public Ban(UUID playerUUID, String reason, String info, UUID bannerUUID, boolean banIp, BanType type)
+	public Ban(UUID playerUUID, String reason, String info, UUID bannerUUID, List<String> ips, BanType type)
 	{
 		Player possiblePlayer = BanTicket.banTicket.getServer().getPlayer(playerUUID); //Check online players first
 		if(possiblePlayer != null)
@@ -39,11 +41,13 @@ public abstract class Ban
 		else //Player isn't online, check offline
 		{
 			this.player = BanTicket.banTicket.getServer().getOfflinePlayer(playerUUID);
+			this.player.hasPlayedBefore();
 		}
 		
 		this.reason = reason;
 		this.info = info;
-		this.banIp = banIp;
+		this.banIp = ips != null;
+		this.ips = ips;
 		this.playerUUID = playerUUID;
 		this.bannerUUID = bannerUUID;
 		this.banType = type;

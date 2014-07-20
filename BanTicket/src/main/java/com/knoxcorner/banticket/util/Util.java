@@ -2,7 +2,11 @@ package com.knoxcorner.banticket.util;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import com.knoxcorner.banticket.BanTicket;
 
@@ -194,4 +198,47 @@ public class Util
 	{
 		return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
 	}
+
+	public static List<String> getCommonIps(HashMap<String, Integer> ipMap, String ip)
+	{
+		int totalLogins = 0;
+		for(int i : ipMap.values())
+			totalLogins += i;
+		
+		boolean enoughLogins = totalLogins > BanTicket.banTicket.getConfigManager().getMinTotalLogins();
+		
+		int num = BanTicket.banTicket.getConfigManager().getNumberCommonIps();
+		
+		List<String> ips = new ArrayList<String>();
+		
+		List<Integer> vals = new ArrayList<Integer>(ipMap.values());
+		Collections.sort(vals, Collections.reverseOrder());
+		vals = vals.subList(0, num);
+		
+		for(Map.Entry<String, Integer> entry : ipMap.entrySet())
+		{
+			if(vals.contains(entry.getValue()))
+			{
+				if(entry.getValue() < BanTicket.banTicket.getConfigManager().getMinLoginsFromIp() && enoughLogins)
+					continue;
+				ips.add(entry.getKey());
+				if(ips.size() == num)
+					break;
+			}
+		}
+		
+		if(ip != null)
+			ips.add(ip);
+		
+		return ips;
+	}
+	
+	public static List<String> newIp(String ip)
+	{
+		ArrayList<String> ips = new ArrayList<String>(1);
+		ips.add(ip);
+		return ips;
+	}
+	
+
 }
