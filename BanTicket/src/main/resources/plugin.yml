@@ -6,5 +6,21 @@ commands:
     bt:
         description: Displays BanTicket related commands
         usage: /bt <subcategory> <applicaple arguments>
-#        permission: sping.command.main
-#        permission-message: You don't have permission to use that. 
+    btb:
+        description: Displays BanTicket related commands
+        usage: /bt <subcategory> <applicaple arguments>
+    bttb:
+        description: Displays BanTicket related commands
+        usage: /bt <subcategory> <applicaple arguments>
+    btbr:
+        description: Displays BanTicket related commands
+        usage: /bt <subcategory> <applicaple arguments>
+    bttbr:
+        description: Displays BanTicket related commands
+        usage: /bt <subcategory> <applicaple arguments>
+    btw:
+        description: Displays BanTicket related commands
+        usage: /bt <subcategory> <applicaple arguments>
+    btinfo:
+        description: Displays BanTicket related commands
+        usage: /bt <subcategory> <applicaple arguments>

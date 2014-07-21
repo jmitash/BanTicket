@@ -8,6 +8,7 @@ import org.bukkit.BanList;
 import org.bukkit.OfflinePlayer;
 
 import com.knoxcorner.banticket.BanTicket;
+import com.knoxcorner.banticket.ban.HistoryEvent.BanType;
 import com.knoxcorner.banticket.util.Util;
 
 public class PermanentBanRequest extends PermanentBan implements Expirable
@@ -24,12 +25,13 @@ public class PermanentBanRequest extends PermanentBan implements Expirable
 	 * @param bannerUUID UUID of player who entered ban command, or null for console
 	 * @param banIp true for IP ban, otherwise false
 	 */
-	public PermanentBanRequest(UUID playerUUID, String reason, String info, UUID bannerUUID, List<String> ips)
+	public PermanentBanRequest(UUID playerUUID, String reason, String info, UUID bannerUUID, boolean ipBan)
 	{
-		super(playerUUID, reason, info, bannerUUID, ips);
+		super(playerUUID, reason, info, bannerUUID, ipBan);
 		this.startTime = System.currentTimeMillis();
 		this.expireTime = BanTicket.banTicket.getConfigManager().getExpireTime();
 		this.approveExpire = BanTicket.banTicket.getConfigManager().getApproveOnExpire();
+		this.setBanType(BanType.PERMBANREQ);
 	}
 	
 	/**
@@ -43,12 +45,13 @@ public class PermanentBanRequest extends PermanentBan implements Expirable
 	 * @param expireTime time till expires
 	 * @param aoe approve on expire
 	 */
-	public PermanentBanRequest(UUID playerUUID, String reason, String info, UUID bannerUUID, List<String> ips, long startTime, long expireTime, boolean aoe)
+	public PermanentBanRequest(UUID playerUUID, String reason, String info, UUID bannerUUID, boolean ipBan, long startTime, long expireTime, boolean aoe)
 	{
-		super(playerUUID, reason, info, bannerUUID, ips);
+		super(playerUUID, reason, info, bannerUUID, ipBan);
 		this.startTime = startTime;
 		this.expireTime = expireTime;
 		this.approveExpire = aoe;
+		this.setBanType(BanType.PERMBANREQ);
 	}
 
 	public boolean isExpired()
@@ -56,11 +59,11 @@ public class PermanentBanRequest extends PermanentBan implements Expirable
 		return this.startTime + this.expireTime < System.currentTimeMillis();
 	}
 	
-	public PermanentBan expire()
+	public PermanentBan expire(List<String> ips)
 	{
-		this.setOnServerBanList(false);
+		this.setOnServerBanList(false, ips);
 		if(this.approveExpire)
-			return new PermanentBan(this.getUUID(), this.getReason(), Util.getDate() + " Auto Renewal; " + this.getInfo(), this.getBannerUUID(), this.ips);
+			return new PermanentBan(this.getUUID(), this.getReason(), Util.getDate() + " Auto Renewal; " + this.getInfo(), this.getBannerUUID(), this.isIpBan());
 		else
 			return null;
 	}
@@ -86,20 +89,43 @@ public class PermanentBanRequest extends PermanentBan implements Expirable
 	 * @return 0 - Success<br>1 - Success, but player hasn't logged in before<br>2 - Ban already exists/Not banned
 	 */
 	@Override
-	public byte setOnServerBanList(boolean banned)
+	public byte setOnServerBanList(boolean banned, List<String> ipsorname)
 	{
-		if(!banned)
+		if(!banned) //unban
 		{
-		
-			return 0;
+			if(this.isIpBan())
+			{
+				//TODO: Existing ban check
+				
+				//Waiting on UUID support
+				/*Iterator<BanEntry> bei = BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).getBanEntries().iterator();
+				while(bei.hasNext())
+				{
+					BanEntry be = bei.next();
+					if(be.getUuid().equals(this.getUUID())
+				}*/
+				for(int i = 0; i < ipsorname.size(); i++)
+				{
+					BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).pardon(ipsorname.get(i));
+				}
+				return 0;
+			}
+			else
+			{
+				for(int i = 0; i < ipsorname.size(); i++)
+				{
+					BanTicket.banTicket.getServer().getBanList(BanList.Type.NAME).pardon(ipsorname.get(0));
+				}
+				return 0;
+			}
 		}
 		
-		if(!banned && BanTicket.banTicket.getServer().getBannedPlayers().contains(getOfflinePlayer()))
+		if(BanTicket.banTicket.getServer().getBannedPlayers().contains(getOfflinePlayer()))
 		{
 			return 2; //Already banned
 		}
 		
-		if(BanTicket.banTicket.getServer().getOfflinePlayer(getUUID()).hasPlayedBefore())
+		if(this.getOfflinePlayer().hasPlayedBefore())
 		{
 			String banSource = null;
 			if(getBannerUUID() != null)
@@ -119,10 +145,10 @@ public class PermanentBanRequest extends PermanentBan implements Expirable
 			
 			if(this.isIpBan())
 			{
-				for(int i = 0; i < ips.size(); i++)
+				for(int i = 0; i < ipsorname.size(); i++)
 				{
 					BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).addBan(
-							ips.get(i),
+							ipsorname.get(i),
 							this.getReason(),
 							new Date(this.expireTime + this.startTime),
 							banSource);
@@ -131,12 +157,14 @@ public class PermanentBanRequest extends PermanentBan implements Expirable
 			}
 			else
 			{
-				BanTicket.banTicket.getServer()
-				.getBanList(BanList.Type.NAME).addBan(
+				if(BanTicket.banTicket.getConfigManager().getSaveToMinecraft())
+				{
+					BanTicket.banTicket.getServer().getBanList(BanList.Type.NAME).addBan(
 						getOfflinePlayer().getName(),
 						this.getReason(),
 						null,
 						banSource);
+				}
 				return 0;
 			}
 		}
@@ -145,5 +173,14 @@ public class PermanentBanRequest extends PermanentBan implements Expirable
 			return 1;
 		}
 	}
-
+	
+	@Override
+	public String getBanMessage()
+	{
+		return "You have been banned by a low-ranking staff member until a\n"
+				+ "higher ranked staff member can approve/deny this ban.\n"
+				+ "Ban will auto-" + (this.approveExpire ? "approved " : "denied ")
+				+ "after " + Util.msToTime(startTime + expireTime - System.currentTimeMillis())
+				+ ".\n\n" + super.getBanMessage();
+	}
 }

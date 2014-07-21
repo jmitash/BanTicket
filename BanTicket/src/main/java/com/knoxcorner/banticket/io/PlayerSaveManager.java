@@ -18,9 +18,9 @@ import java.util.UUID;
 
 import com.knoxcorner.banticket.BanTicket;
 import com.knoxcorner.banticket.ban.Ban;
-import com.knoxcorner.banticket.ban.BanType;
 import com.knoxcorner.banticket.ban.Expirable;
 import com.knoxcorner.banticket.ban.HistoryEvent;
+import com.knoxcorner.banticket.ban.HistoryEvent.BanType;
 import com.knoxcorner.banticket.ban.PermanentBan;
 import com.knoxcorner.banticket.ban.PermanentBanRequest;
 import com.knoxcorner.banticket.ban.TemporaryBan;
@@ -42,7 +42,10 @@ public class PlayerSaveManager
 		this.pl = plugin;
 		saveFolder = new File(pl.getDataFolder(), "players");
 		if(!saveFolder.exists())
-			saveFolder.mkdir();
+			if(!saveFolder.mkdirs())
+			{
+				pl.getLogger().severe("WARNING: Could not create directory " + saveFolder.getPath() + "; bans will not be saved");
+			}
 	}
 	
 	public boolean playerExists(UUID uuid)
@@ -92,24 +95,14 @@ public class PlayerSaveManager
 			return null;
 		}
 		
-		HashMap<String, Integer> ips = null;
+		LinkedHashMap<String, Integer> ips = null;
 		LinkedHashMap<Long, String> prevNames = null;
 		BanList banList = null;
 		LinkedList<HistoryEvent> history = null;
-		String lastIp = null;
 		for(int line = 0; line < buffer.size(); line++) //TODO: versioning
 		{
-			if(buffer.get(line).startsWith("IP TABLE: "))
+			if(buffer.get(line).equals("IP TABLE:"))
 			{
-				String[] possibleIp = buffer.get(line).split(" ");
-				if(possibleIp.length < 3)
-				{
-					pl.getLogger().warning("\"" + buffer.get(line) + "\": missing last IP on line " + line + " of " + file.getPath());
-				}
-				else
-				{
-					lastIp = possibleIp[2];
-				}
 				ips = this.loadIps(line + 1, buffer, file);
 			}
 			else if(buffer.get(line).equals("PREVIOUS NAMES:"))
@@ -118,7 +111,7 @@ public class PlayerSaveManager
 			}
 			else if(buffer.get(line).equals("BAN LIST:"))
 			{
-				banList = this.loadBans(line + 1, buffer, file, uuid, ips, ip);
+				banList = this.loadBans(line + 1, buffer, file, uuid);
 			}
 			else if(buffer.get(line).equals("HISTORY:"))
 			{
@@ -146,13 +139,9 @@ public class PlayerSaveManager
 			pl.getLogger().severe("History failed to load in file " + file.getPath());
 			return null;
 		}
-		if(lastIp == null)
-		{
-			pl.getLogger().severe("Last IP failed to load in file " + file.getPath());
-			return null;
-		}
+
 		
-		return new BTPlayer(uuid, ips, prevNames, banList, history, lastIp);
+		return new BTPlayer(uuid, ips, prevNames, banList, history);
 	}
 
 	private LinkedList<HistoryEvent> loadHistory(int lineOffset, List<String> buffer, File file)
@@ -211,7 +200,7 @@ public class PlayerSaveManager
 				{
 					info = curLine.replaceFirst("INFO: ", "");
 				}
-				else if(curLine.startsWith("LENGTH: ") && banType == BanType.TEMPBAN)
+				else if(curLine.startsWith("LENGTH: ") && (banType == BanType.TEMPBAN || banType == BanType.TEMPBANREQ))
 				{
 					lengthString = curLine.replaceFirst("LENGTH: ", "");
 				}
@@ -244,7 +233,7 @@ public class PlayerSaveManager
 				continue;
 			}
 			
-			if(lengthString == null && banType == BanType.TEMPBAN)
+			if(lengthString == null && (banType == BanType.TEMPBAN || banType == BanType.TEMPBANREQ))
 			{
 				pl.getLogger().warning("Missing LENGTH subcatagory under line " + (lineOffset + lines) + " of " + file.getPath());
 				pl.getLogger().warning("The ban length will be replace with 0");
@@ -253,7 +242,7 @@ public class PlayerSaveManager
 				
 			try
 			{
-				if(banType == BanType.TEMPBAN)
+				if((banType == BanType.TEMPBAN || banType == BanType.TEMPBANREQ))
 					length = Long.parseLong(lengthString);
 			} catch (NumberFormatException nfe)
 			{
@@ -274,9 +263,9 @@ public class PlayerSaveManager
 			HistoryEvent he = null;
 			Calendar cal = Calendar.getInstance();
 			cal.setTimeInMillis(date);
-			if(banType == BanType.TEMPBAN)
+			if(banType == BanType.TEMPBAN || banType == BanType.TEMPBANREQ)
 			{
-				he = new HistoryEvent(event, cal, length);
+				he = new HistoryEvent(banType, event, cal, length);
 			}
 			else
 			{
@@ -290,7 +279,7 @@ public class PlayerSaveManager
 		return history;
 	}
 	
-	private BanList loadBans(int lineOffset, List<String> buffer, File file, UUID playersUuid, HashMap<String, Integer> ipMap, String ip)
+	private BanList loadBans(int lineOffset, List<String> buffer, File file, UUID playersUuid)
 	{
 		int lines = 0;
 		BanList bans = new BanList();
@@ -511,27 +500,26 @@ public class PlayerSaveManager
 				
 				
 				Ban ban = null;
-				List<String> ips = isIp ? Util.getCommonIps(ipMap, ip) : null;
 				if(isFull)
 				{
 					if(isPerm)
 					{
-						ban = new PermanentBan(playersUuid, reason, info, bannersUuid, ips);
+						ban = new PermanentBan(playersUuid, reason, info, bannersUuid, isIp);
 					}
 					else
 					{
-						ban = new TemporaryBan(playersUuid, reason, info, bannersUuid, ips, banEnd);
+						ban = new TemporaryBan(playersUuid, reason, info, bannersUuid, isIp, banEnd);
 					}
 				}
 				else
 				{
 					if(isPerm)
 					{
-						ban = new PermanentBanRequest(playersUuid, reason, info, bannersUuid, ips, startTime, expTime, aoe);
+						ban = new PermanentBanRequest(playersUuid, reason, info, bannersUuid, isIp, startTime, expTime, aoe);
 					}
 					else
 					{
-						ban = new TemporaryBanRequest(playersUuid, reason, info, bannersUuid, ips, banEnd, startTime, expTime, aoe);
+						ban = new TemporaryBanRequest(playersUuid, reason, info, bannersUuid, isIp, banEnd, startTime, expTime, aoe);
 					}
 				}
 				bans.add(ban);
@@ -575,10 +563,10 @@ public class PlayerSaveManager
 		return nameMap;
 	}
 
-	private HashMap<String, Integer> loadIps(int lineOffset, List<String> buffer, File file)
+	private LinkedHashMap<String, Integer> loadIps(int lineOffset, List<String> buffer, File file)
 	{
 		int lines = 0;
-		HashMap<String, Integer> ipMap = new HashMap<String, Integer>();
+		LinkedHashMap<String, Integer> ipMap = new LinkedHashMap<String, Integer>();
 		while(lineOffset + lines < buffer.size() && buffer.get(lineOffset + lines).startsWith("\t"))
 		{
 			String line = buffer.get(lineOffset + lines).substring(1); //Cut out first tab
@@ -638,7 +626,7 @@ public class PlayerSaveManager
 		
 		
 		LinkedList<String> buffer = new LinkedList<String>();
-		buffer.add("IP TABLE: " + player.getLastIp());
+		buffer.add("IP TABLE:");
 
 		for(Map.Entry<String, Integer> entry : player.getIpMap().entrySet())
 		{
@@ -702,7 +690,7 @@ public class PlayerSaveManager
 		for(HistoryEvent he : player.getHistory())
 		{
 			buffer.add("\t" + he.getEventType());
-			if(he.getEventType() == BanType.TEMPBAN)
+			if(he.getEventType() == BanType.TEMPBAN || he.getEventType() == BanType.TEMPBANREQ)
 				buffer.add("\t\tLENGTH: " + he.getBanTime());
 			buffer.add("\t\tDATE: " + he.getCalendar().getTimeInMillis());
 			buffer.add("\t\tEVENT: " + he.getEvent());

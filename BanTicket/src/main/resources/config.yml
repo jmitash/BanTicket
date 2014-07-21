@@ -13,14 +13,16 @@ ApproveOnExpire: false
 
 
 
-
-
-
 ########################
 ### ADVANCED OPTIONS ###
 ########################
 
 #Most people will not need to change these
+
+#A bug with Minecraft prevents people who's Minecraft ban (not BanTicket) has past time
+#From joining the server until the next restart. To copy bans to Minecraft's ban file's
+#Despite this bug, set this to true
+PutBansOnMinecraftFile: false
 
 #Will log each individual login to file
 #Note: This can make a save file really big; Not suggested unless necessary

@@ -1,8 +1,10 @@
 package com.knoxcorner.banticket.io;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.bukkit.configuration.file.FileConfiguration;
+
 
 
 import com.knoxcorner.banticket.BanTicket;
@@ -22,6 +24,7 @@ public class ConfigManager
 	private int numCommonIps;
 	private int minLoginsFromIp;
 	private int minNumTotalLogins;
+	private boolean saveToMinecraft;
 	
 	public ConfigManager(BanTicket plugin)
 	{
@@ -60,6 +63,7 @@ public class ConfigManager
 		this.numCommonIps = config.getInt("BanXMostCommonIPs", 0);
 		this.minLoginsFromIp = config.getInt("MinLoginsFromIPToBan", 0);
 		this.minNumTotalLogins = config.getInt("MinNumTotalLogins", 0);
+		this.saveToMinecraft = config.getBoolean("PutBansOnMinecraftFile", false);
 		
 		
 	}
@@ -72,8 +76,9 @@ public class ConfigManager
 			return;
 		}
 		
+		/*
 		FileConfiguration config = pl.getConfig();
-		config.set("ApproveOnExpire", this.approveOnExpire);
+		config.set("ApproveOnExpire", true);
 		config.set("ExpireTime", Util.msToTime(timeTillExpiry));
 		
 		config.set("LogLogins", this.logLogins);
@@ -81,6 +86,15 @@ public class ConfigManager
 		config.set("BanXMostCommonIPs", this.numCommonIps);
 		config.set("MinLoginsFromIPToBan", this.minLoginsFromIp);
 		config.set("MinNumTotalLogins", this.minNumTotalLogins);
+		
+		try
+		{
+			config.save(configFile);
+		} catch (IOException e)
+		{
+			e.printStackTrace();
+		}*/
+		
 	}
 	
 	public long getExpireTime()
@@ -116,6 +130,11 @@ public class ConfigManager
 	public int getMinTotalLogins()
 	{
 		return this.minNumTotalLogins;
+	}
+	
+	public boolean getSaveToMinecraft()
+	{
+		return this.saveToMinecraft;
 	}
 
 }

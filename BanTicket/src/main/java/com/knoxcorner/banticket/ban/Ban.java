@@ -7,6 +7,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
 import com.knoxcorner.banticket.BanTicket;
+import com.knoxcorner.banticket.ban.HistoryEvent.BanType;
 
 /**
  * Abstract ban type to hold ban information
@@ -21,7 +22,7 @@ public abstract class Ban
 	private boolean banIp;
 	private BanType banType;
 	private OfflinePlayer player;
-	protected List<String> ips;
+
 	
 	/**
 	 * Default ban constructor
@@ -31,7 +32,7 @@ public abstract class Ban
 	 * @param bannerUUID UUID of player who entered ban command, or null for console
 	 * @param ips list of IPs if IP ban, otherwise null
 	 */
-	public Ban(UUID playerUUID, String reason, String info, UUID bannerUUID, List<String> ips, BanType type)
+	public Ban(UUID playerUUID, String reason, String info, UUID bannerUUID, boolean ipBan, BanType type)
 	{
 		Player possiblePlayer = BanTicket.banTicket.getServer().getPlayer(playerUUID); //Check online players first
 		if(possiblePlayer != null)
@@ -46,8 +47,7 @@ public abstract class Ban
 		
 		this.reason = reason;
 		this.info = info;
-		this.banIp = ips != null;
-		this.ips = ips;
+		this.banIp = ipBan;
 		this.playerUUID = playerUUID;
 		this.bannerUUID = bannerUUID;
 		this.banType = type;
@@ -116,6 +116,10 @@ public abstract class Ban
 		return this.banType;
 	}
 	
+	protected void setBanType(BanType type)
+	{
+		this.banType = type;
+	}
 
 	public abstract boolean isOver();
 	
@@ -128,7 +132,7 @@ public abstract class Ban
 	 * @param banned true if player should be banned, false if they should be unbanned
 	 * @return 0 - Success<br>1 - Success, but player hasn't logged in before<br>2 - Ban already exists/Not banned
 	 */
-	public abstract byte setOnServerBanList(boolean banned); //TODO: Unban
+	public abstract byte setOnServerBanList(boolean banned, List<String> ipsorname);
 	
 	
 	

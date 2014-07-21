@@ -8,6 +8,7 @@ import org.bukkit.BanList;
 import org.bukkit.OfflinePlayer;
 
 import com.knoxcorner.banticket.BanTicket;
+import com.knoxcorner.banticket.ban.HistoryEvent.BanType;
 import com.knoxcorner.banticket.util.Util;
 
 public class TemporaryBanRequest extends TemporaryBan implements Expirable
@@ -28,12 +29,13 @@ public class TemporaryBanRequest extends TemporaryBan implements Expirable
 	 * @param expireTime time till expires
 	 * @param aoe approve on expire
 	 */
-	public TemporaryBanRequest(UUID playerUUID, String reason, String info,UUID bannerUUID, List<String> ips, long endTime)
+	public TemporaryBanRequest(UUID playerUUID, String reason, String info,UUID bannerUUID, boolean ipBan, long endTime)
 	{
-		super(playerUUID, reason, info, bannerUUID, ips, endTime);
+		super(playerUUID, reason, info, bannerUUID, ipBan, endTime);
 		this.startTime = System.currentTimeMillis();
 		this.expireTime = BanTicket.banTicket.getConfigManager().getExpireTime();
 		this.approveExpire = BanTicket.banTicket.getConfigManager().getApproveOnExpire();
+		this.setBanType(BanType.TEMPBANREQ);
 	}
 	
 	/**
@@ -47,12 +49,13 @@ public class TemporaryBanRequest extends TemporaryBan implements Expirable
 	 * @param expireTime time till expires
 	 * @param aoe approve on expire
 	 */
-	public TemporaryBanRequest(UUID playerUUID, String reason, String info,UUID bannerUUID, List<String> ips, long endTime, long startTime, long expireTime, boolean aoe)
+	public TemporaryBanRequest(UUID playerUUID, String reason, String info,UUID bannerUUID, boolean ipBan, long endTime, long startTime, long expireTime, boolean aoe)
 	{
-		super(playerUUID, reason, info, bannerUUID, ips, endTime);
+		super(playerUUID, reason, info, bannerUUID, ipBan, endTime);
 		this.startTime = startTime;
 		this.expireTime = expireTime;
 		this.approveExpire = aoe;
+		this.setBanType(BanType.TEMPBANREQ);
 	}
 	
 	public boolean isExpired()
@@ -60,11 +63,11 @@ public class TemporaryBanRequest extends TemporaryBan implements Expirable
 		return this.startTime + this.expireTime < System.currentTimeMillis();
 	}
 	
-	public TemporaryBan expire()
+	public TemporaryBan expire(List<String> ips)
 	{
-		this.setOnServerBanList(false);
+		this.setOnServerBanList(false, ips);
 		if(this.approveExpire && !super.isOver())
-			return new TemporaryBan(this.getUUID(), this.getReason(), Util.getDate() + " Auto Renewal; " + this.getInfo(), this.getBannerUUID(), ips, this.getEndTime());
+			return new TemporaryBan(this.getUUID(), this.getReason(), Util.getDate() + " Auto Renewal; " + this.getInfo(), this.getBannerUUID(), this.isIpBan(), this.getEndTime());
 		else
 			return null;
 	}
@@ -81,14 +84,44 @@ public class TemporaryBanRequest extends TemporaryBan implements Expirable
 	 * @return 0 - Success<br>1 - Success, but player hasn't logged in before<br>2 - Ban already exists/Not banned
 	 */
 	@Override
-	public byte setOnServerBanList(boolean banned)
+	public byte setOnServerBanList(boolean banned, List<String> ipsorname)
 	{
+		if(!banned)
+		{
+			if(this.isIpBan())
+			{
+				//TODO: Existing ban check
+				
+				//Waiting on UUID support
+				/*Iterator<BanEntry> bei = BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).getBanEntries().iterator();
+				while(bei.hasNext())
+				{
+					BanEntry be = bei.next();
+					if(be.getUuid().equals(this.getUUID())
+				}*/
+				for(int i = 0; i < ipsorname.size(); i++)
+				{
+					BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).pardon(ipsorname.get(i));
+				}
+				return 0;
+			}
+			else
+			{
+				for(int i = 0; i < ipsorname.size(); i++)
+				{
+					BanTicket.banTicket.getServer().getBanList(BanList.Type.NAME).pardon(ipsorname.get(0));
+				}
+				return 0;
+			}
+		}
+	
+		
 		if(BanTicket.banTicket.getServer().getBannedPlayers().contains(getOfflinePlayer()))
 		{
 			return 2; //Already banned
 		}
 		
-		if(BanTicket.banTicket.getServer().getOfflinePlayer(getUUID()).hasPlayedBefore())
+		if(this.getOfflinePlayer().hasPlayedBefore())
 		{
 			String banSource = null;
 			if(getBannerUUID() != null)
@@ -119,10 +152,10 @@ public class TemporaryBanRequest extends TemporaryBan implements Expirable
 			
 			if(this.isIpBan())
 			{
-				for(int i = 0; i < ips.size(); i++)
+				for(int i = 0; i < ipsorname.size(); i++)
 				{
 					BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).addBan(
-							ips.get(i),
+							ipsorname.get(i),
 							this.getReason(),
 							date,
 							banSource);
@@ -131,13 +164,14 @@ public class TemporaryBanRequest extends TemporaryBan implements Expirable
 			}
 			else
 			{
-				
-				BanTicket.banTicket.getServer()
-				.getBanList(BanList.Type.NAME).addBan(
+				if(BanTicket.banTicket.getConfigManager().getSaveToMinecraft())
+				{
+					BanTicket.banTicket.getServer().getBanList(BanList.Type.NAME).addBan(
 						getOfflinePlayer().getName(),
 						this.getReason(),
 						date,
 						banSource);
+				}
 				return 0;
 			}
 		}
@@ -160,6 +194,16 @@ public class TemporaryBanRequest extends TemporaryBan implements Expirable
 	public boolean getApproveOnExpire()
 	{
 		return this.approveExpire;
+	}
+	
+	@Override
+	public String getBanMessage()
+	{
+		return "You have been banned by a low-ranking staff member until a\n"
+				+ "higher ranked staff member can approve/deny this ban.\n"
+				+ "Ban will auto-" + (this.approveExpire ? "approved " : "denied ")
+				+ "after " + Util.msToTime(startTime + expireTime - System.currentTimeMillis())
+				+ ".\n\n" + super.getBanMessage();
 	}
 
 }

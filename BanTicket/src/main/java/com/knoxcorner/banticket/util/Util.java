@@ -117,7 +117,7 @@ public class Util
 		while(offset < chars.length)
 		{
 			temp = "";
-			for(int i = offset; i < chars.length; i++)
+			for(int i = offset;; i++)
 			{
 				String chr = Character.toString(chars[i]);
 				if(i == 0 && "dhms".contains(chr)) //No empty labels
@@ -128,6 +128,8 @@ public class Util
 				if("0123456789".contains(chr)) //number
 				{
 					temp += chr;
+					if(i == chars.length - 1) //Unlabeled value - end of string
+						return -1;
 					continue;
 				}
 				
@@ -183,6 +185,8 @@ public class Util
 						return -1;
 					}
 				}
+				
+				
 			}
 		}
 		
@@ -199,7 +203,7 @@ public class Util
 		return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
 	}
 
-	public static List<String> getCommonIps(HashMap<String, Integer> ipMap, String ip)
+	public static List<String> getCommonIps(HashMap<String, Integer> ipMap)
 	{
 		int totalLogins = 0;
 		for(int i : ipMap.values())
@@ -227,17 +231,18 @@ public class Util
 			}
 		}
 		
-		if(ip != null)
-			ips.add(ip);
+		if(ipMap.size() > 0 && !ips.contains(ipMap.keySet().toArray()[ipMap.size() - 1])) //last IP
+			ips.add((String) ipMap.keySet().toArray()[ipMap.size() - 1]);
+
 		
 		return ips;
 	}
 	
-	public static List<String> newIp(String ip)
+	public static List<String> newList(String str)
 	{
-		ArrayList<String> ips = new ArrayList<String>(1);
-		ips.add(ip);
-		return ips;
+		ArrayList<String> strs = new ArrayList<String>(1);
+		strs.add(str);
+		return strs;
 	}
 	
 

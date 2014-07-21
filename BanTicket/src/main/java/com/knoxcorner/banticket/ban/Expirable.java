@@ -1,10 +1,12 @@
 package com.knoxcorner.banticket.ban;
 
+import java.util.List;
+
 public interface Expirable
 {
 	public boolean isExpired();
 	
-	public Ban expire();
+	public Ban expire(List<String> ips);
 	
 	public long getStartTime();
 	

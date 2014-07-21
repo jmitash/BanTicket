@@ -13,7 +13,7 @@ import org.bukkit.entity.Player;
 import com.knoxcorner.banticket.BanTicket;
 import com.knoxcorner.banticket.ban.Ban;
 import com.knoxcorner.banticket.ban.HistoryEvent;
-import com.knoxcorner.banticket.ban.BanType;
+import com.knoxcorner.banticket.ban.HistoryEvent.BanType;
 import com.knoxcorner.banticket.util.BanList;
 import com.knoxcorner.banticket.util.Util;
 
@@ -28,11 +28,10 @@ public class BTPlayer
 {
 
 	private UUID uuid;
-	private HashMap<String, Integer> ipMap;
+	private LinkedHashMap<String, Integer> ipMap;
 	private LinkedHashMap<Long, String> prevNamesMap;
 	private BanList bans;
 	private LinkedList<HistoryEvent> history;
-	private String lastIp;
 	
 	/**
 	 * Constructor for file load
@@ -40,19 +39,18 @@ public class BTPlayer
 	 * @param ipMap HashMap of IPs and login counts from them
 	 * @param prevNames Map of previous usernames and dates logged in with
 	 */
-	public BTPlayer(UUID uuid, HashMap<String, Integer> ipMap, LinkedHashMap<Long, String> prevNames, BanList bans, LinkedList<HistoryEvent> history, String lastIp)
+	public BTPlayer(UUID uuid, LinkedHashMap<String, Integer> ipMap, LinkedHashMap<Long, String> prevNames, BanList bans, LinkedList<HistoryEvent> history)
 	{
 		this.uuid = uuid;
 		this.ipMap = ipMap;
 		this.prevNamesMap = prevNames;
 		this.bans = bans;
 		this.history = history;
-		this.lastIp = lastIp;
 		
-		bans.update();
+		bans.update(this.getCommonIps());
 		
 		OfflinePlayer player = BanTicket.banTicket.getServer().getOfflinePlayer(uuid);
-		if(player.hasPlayedBefore() && !player.isBanned()) //Somehow unbanned on server
+		if(player.hasPlayedBefore() && !player.isBanned() && BanTicket.banTicket.getConfigManager().getSaveToMinecraft()) //Somehow unbanned on server
 		{
 			for(Ban ban : bans)
 			{
@@ -60,7 +58,7 @@ public class BTPlayer
 				{
 					BanTicket.banTicket.getLogger().warning(player.getName() + " is banned by BanTicket, but not Bukkit; Banning");
 					BanTicket.banTicket.getLogger().info("UUID: " + uuid.toString());
-					ban.setOnServerBanList(true);
+					ban.setOnServerBanList(true, ban.isIpBan() ? this.getCommonIps() : Util.newList(getMostRecentName()));
 					break;
 				}
 			}
@@ -76,20 +74,22 @@ public class BTPlayer
 	public BTPlayer(UUID uuid, String ip, String name)
 	{
 		this.uuid = uuid;
-		this.ipMap = new HashMap<String, Integer>();
+		this.ipMap = new LinkedHashMap<String, Integer>();
 		this.prevNamesMap = new LinkedHashMap<Long, String>();
 		this.bans = new BanList();
 		this.history = new LinkedList<HistoryEvent>();
 		this.history.add(new HistoryEvent(BanType.INFO, "First join"));
 		this.addIP(ip);
 		this.addName(name);
-		this.lastIp = ip;
 	}
 	
 	public void addIP(String IP)
 	{
 		if(this.ipMap.containsKey(IP))
-			this.ipMap.put(IP, ipMap.get(IP) + 1);
+		{
+			int count = this.ipMap.remove(IP);
+			this.ipMap.put(IP, count + 1);
+		}
 		else
 			this.ipMap.put(IP, 1);
 	}
@@ -126,7 +126,7 @@ public class BTPlayer
 		this.bans.add(ban);
 		this.addHistory(new HistoryEvent(ban));
 		
-		byte success = ban.setOnServerBanList(true);
+		byte success = ban.setOnServerBanList(true, this.getCommonIps());
 		Player player;
 		if((player = BanTicket.banTicket.getServer().getPlayer(uuid)) != null)
 		{
@@ -172,12 +172,16 @@ public class BTPlayer
 	
 	public List<String> getCommonIps()
 	{		
-		return Util.getCommonIps(ipMap, lastIp);
+		return Util.getCommonIps(ipMap);
 	}
+	
 	
 	public String getLastIp()
 	{
-		return this.lastIp;
+		if(this.ipMap.size() > 0)
+			return (String) this.ipMap.keySet().toArray()[this.ipMap.size() - 1];
+		else
+			return null;
 	}
 	
 	public void save()

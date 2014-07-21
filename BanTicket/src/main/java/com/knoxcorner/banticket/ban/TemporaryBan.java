@@ -8,6 +8,7 @@ import org.bukkit.BanList;
 import org.bukkit.OfflinePlayer;
 
 import com.knoxcorner.banticket.BanTicket;
+import com.knoxcorner.banticket.ban.HistoryEvent.BanType;
 import com.knoxcorner.banticket.util.Util;
 
 public class TemporaryBan extends Ban
@@ -21,12 +22,12 @@ public class TemporaryBan extends Ban
 	 * @param reason reason for ban
 	 * @param info supplementary info about this player's ban
 	 * @param bannerUUID UUID of player who entered ban command, or null for console
-	 * @param banIp true for IP ban, otherwise false
+	 * @param ipBan true for IP ban, otherwise false
 	 * @param endTime ban's expire time in standard ms time
 	 */
-	public TemporaryBan(UUID playerUUID, String reason, String info, UUID bannerUUID, List<String> ips, long endTime)
+	public TemporaryBan(UUID playerUUID, String reason, String info, UUID bannerUUID, boolean ipBan, long endTime)
 	{
-		super(playerUUID, reason, info, bannerUUID, ips, BanType.TEMPBAN);
+		super(playerUUID, reason, info, bannerUUID, ipBan, BanType.TEMPBAN);
 		this.endTime = endTime;
 	}
 
@@ -43,14 +44,43 @@ public class TemporaryBan extends Ban
 	}
 
 	@Override
-	public byte setOnServerBanList(boolean banned)
+	public byte setOnServerBanList(boolean banned, List<String> ipsorname)
 	{
+		if(!banned) //unban
+		{
+			if(this.isIpBan())
+			{
+				//TODO: Existing ban check
+				
+				//Waiting on UUID support
+				/*Iterator<BanEntry> bei = BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).getBanEntries().iterator();
+				while(bei.hasNext())
+				{
+					BanEntry be = bei.next();
+					if(be.getUuid().equals(this.getUUID())
+				}*/
+				for(int i = 0; i < ipsorname.size(); i++)
+				{
+					BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).pardon(ipsorname.get(i));
+				}
+				return 0;
+			}
+			else
+			{
+				for(int i = 0; i < ipsorname.size(); i++)
+				{
+					BanTicket.banTicket.getServer().getBanList(BanList.Type.NAME).pardon(ipsorname.get(0));
+				}
+				return 0;
+			}
+		}
+		
 		if(BanTicket.banTicket.getServer().getBannedPlayers().contains(getOfflinePlayer()))
 		{
 			return 2; //Already banned
 		}
 		
-		if(BanTicket.banTicket.getServer().getOfflinePlayer(getUUID()).hasPlayedBefore() && !this.isIpBan())
+		if(this.getOfflinePlayer().hasPlayedBefore())
 		{
 			String banSource = null;
 			if(getBannerUUID() != null)
@@ -70,10 +100,10 @@ public class TemporaryBan extends Ban
 			
 			if(this.isIpBan())
 			{
-				for(int i = 0; i < ips.size(); i++)
+				for(int i = 0; i < ipsorname.size(); i++)
 				{
 					BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).addBan(
-							ips.get(i),
+							ipsorname.get(i),
 							this.getReason(),
 							new Date(endTime),
 							banSource);
@@ -82,11 +112,14 @@ public class TemporaryBan extends Ban
 			}
 			else
 			{
-				BanTicket.banTicket.getServer().getBanList(BanList.Type.NAME).addBan(
+				if(BanTicket.banTicket.getConfigManager().getSaveToMinecraft())
+				{
+					BanTicket.banTicket.getServer().getBanList(BanList.Type.NAME).addBan(
 						getOfflinePlayer().getName(),
 						this.getReason(),
 						new Date(endTime),
 						banSource);
+				}
 				return 0;
 			}
 		}

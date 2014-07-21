@@ -3,11 +3,19 @@ package com.knoxcorner.banticket.ban;
 import java.util.Calendar;
 
 import com.knoxcorner.banticket.util.Util;
-import com.knoxcorner.banticket.ban.BanType;
 
 
 public class HistoryEvent
 {
+	public enum BanType
+	{
+		INFO,
+		WARN,
+		TEMPBAN,
+		PERMBAN,
+		TEMPBANREQ,
+		PERMBANREQ
+	}
 
 	private Calendar calendar;
 	private String event;
@@ -21,7 +29,7 @@ public class HistoryEvent
 		this.eventType = ban.getType();
 		this.calendar = Calendar.getInstance();
 		this.extraInfo = ban.getInfo();
-		if(ban.getType() == BanType.TEMPBAN)
+		if(ban.getType() == BanType.TEMPBAN || ban.getType() == BanType.TEMPBANREQ)
 		{
 			this.banTime = ((TemporaryBan) ban).getEndTime() - System.currentTimeMillis(); //new bans only
 		}
@@ -59,11 +67,11 @@ public class HistoryEvent
 	 * @param event description of this event
 	 * @param cal time of event
 	 */
-	public HistoryEvent(String event, Calendar cal, long banLength)
+	public HistoryEvent(BanType type, String event, Calendar cal, long banLength)
 	{
 		this.event = event;
 		this.calendar = cal;
-		this.eventType = BanType.TEMPBAN;
+		this.eventType = type;
 		this.banTime = banLength;
 	}
 	
@@ -93,7 +101,7 @@ public class HistoryEvent
 	public String getFormattedLabel()
 	{
 		String label = String.format("Type: %s; Date: %tD %tl:%tM %tp", this.eventType, calendar, calendar, calendar, calendar);
-		if(this.eventType == BanType.TEMPBAN)
+		if(this.eventType == BanType.TEMPBAN || this.eventType == BanType.TEMPBANREQ)
 		{
 			label += "; Length: ";
 			label += Util.msToTime(this.banTime);
