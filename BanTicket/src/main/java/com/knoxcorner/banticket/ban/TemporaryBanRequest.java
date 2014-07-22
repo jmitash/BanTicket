@@ -155,7 +155,7 @@ public class TemporaryBanRequest extends TemporaryBan implements Expirable
 						this.getUUID(), this.getBannerUUID(), true,
 						this.expireTime + System.currentTimeMillis(),
 						this.approveExpire);
-				BanTicket.banTicket.getIpBanManager().add(ipban);
+				BanTicket.banTicket.getIpBanManager().addBan(ipban);
 				
 				if(BanTicket.banTicket.getConfigManager().getSaveToMinecraft())
 				{

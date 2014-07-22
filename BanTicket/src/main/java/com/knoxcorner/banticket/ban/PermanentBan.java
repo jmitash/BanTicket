@@ -112,7 +112,7 @@ public class PermanentBan extends Ban
 						this.getUUID(), this.getBannerUUID(), false,
 						BanTicket.banTicket.getConfigManager().getExpireTime() + System.currentTimeMillis(),
 						BanTicket.banTicket.getConfigManager().getApproveOnExpire());
-				return BanTicket.banTicket.getIpBanManager().add(ipban);
+				return BanTicket.banTicket.getIpBanManager().addBan(ipban);
 			}
 			else
 			{

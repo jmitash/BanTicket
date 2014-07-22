@@ -56,11 +56,11 @@ public class IpBanManager
 			{
 				if(ipban.isExpired())
 				{
-					this.ipBans.remove(ipban);
+					this.removeBan(ipban);
 					ipban = ipban.expire();
 					if(ipban != null)
 					{
-						this.ipBans.add(ipban);
+						this.addBan(ipban);
 						return ipban;
 					}
 					else
@@ -68,7 +68,11 @@ public class IpBanManager
 				}
 				
 				if(ipban.isOver())
+				{
+					this.removeBan(ipban);
 					return null;
+				}
+					
 				
 				return ipban;
 			}
@@ -171,7 +175,7 @@ public class IpBanManager
 	}
 	
 	
-	public synchronized byte add(IpBan ban)
+	public synchronized byte addBan(IpBan ban)
 	{
 		for(IpBan ipban : ipBans)
 		{
@@ -239,11 +243,17 @@ public class IpBanManager
 		}
 		
 		Scanner tempScan;
-		String line;
 		byte version = -1;
+		List<String> buffer = new ArrayList<String>(10);
 		while(in.hasNextLine())
 		{
-			line = in.nextLine();
+			buffer.add(in.nextLine());
+		}
+		in.close();
+		
+		for(int i = 0; i < buffer.size(); i++)
+		{
+			String line = buffer.get(i);
 			tempScan = new Scanner(line);
 			{
 				if(tempScan.hasNext())
@@ -303,7 +313,26 @@ public class IpBanManager
 							IpBan ipban = new IpBan(ipsList, reason, info, endTime, banned, 
 									banner, isReq, expireTime, aoe);
 							
-							this.ipBans.add(ipban);
+							if(ipban.isOver())
+							{
+								//it's over- dont add it back
+								this.removeBan(ipban);
+							}
+							else if(ipban.isExpired())
+							{
+								//its expired, fetch new ban if needed
+								IpBan newBan = ipban.expire();
+								if(newBan != null)
+								{
+									this.addBan(newBan);
+								}
+								this.removeBan(ipban);
+							}
+							else
+							{
+								this.ipBans.add(ipban);
+							}
+							
 							
 							
 						} catch(InputMismatchException ime)
@@ -326,12 +355,10 @@ public class IpBanManager
 				}
 			}
 			tempScan.close();
-
+			
 		}
+	
 		
-		
-		
-		in.close();
 		
 		return true;
 	}

@@ -160,7 +160,7 @@ public class PermanentBanRequest extends PermanentBan implements Expirable
 						this.getUUID(), this.getBannerUUID(), true,
 						this.expireTime + System.currentTimeMillis(),
 						this.approveExpire);
-				BanTicket.banTicket.getIpBanManager().add(ipban);
+				BanTicket.banTicket.getIpBanManager().addBan(ipban);
 				
 				return 0;
 			}
