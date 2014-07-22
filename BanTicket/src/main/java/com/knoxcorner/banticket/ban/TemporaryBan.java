@@ -52,13 +52,12 @@ public class TemporaryBan extends Ban
 			{
 				//TODO: Existing ban check
 				
-				//Waiting on UUID support
-				/*Iterator<BanEntry> bei = BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).getBanEntries().iterator();
-				while(bei.hasNext())
-				{
-					BanEntry be = bei.next();
-					if(be.getUuid().equals(this.getUUID())
-				}*/
+				IpBan ipban = new IpBan(ipsorname, this.getReason(), this.getInfo(), this.getEndTime(),
+						this.getUUID(), this.getBannerUUID(), false,
+						BanTicket.banTicket.getConfigManager().getExpireTime() + System.currentTimeMillis(),
+						BanTicket.banTicket.getConfigManager().getApproveOnExpire());
+				BanTicket.banTicket.getIpBanManager().removeBan(ipban);
+				
 				for(int i = 0; i < ipsorname.size(); i++)
 				{
 					BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).pardon(ipsorname.get(i));
@@ -100,15 +99,23 @@ public class TemporaryBan extends Ban
 			
 			if(this.isIpBan())
 			{
-				for(int i = 0; i < ipsorname.size(); i++)
+				if(BanTicket.banTicket.getConfigManager().getSaveToMinecraft())
 				{
-					BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).addBan(
-							ipsorname.get(i),
-							this.getReason(),
-							new Date(endTime),
-							banSource);
+					for(int i = 0; i < ipsorname.size(); i++)
+					{
+						BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).addBan(
+								ipsorname.get(i),
+								this.getReason(),
+								new Date(endTime),
+								banSource);
+					}
 				}
-				return 0;
+				
+				IpBan ipban = new IpBan(ipsorname, this.getReason(), this.getInfo(), this.getEndTime(),
+						this.getUUID(), this.getBannerUUID(), false,
+						BanTicket.banTicket.getConfigManager().getExpireTime() + System.currentTimeMillis(),
+						BanTicket.banTicket.getConfigManager().getApproveOnExpire());
+				return BanTicket.banTicket.getIpBanManager().add(ipban);
 			}
 			else
 			{

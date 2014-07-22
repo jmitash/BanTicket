@@ -10,6 +10,7 @@ import com.knoxcorner.banticket.BanTicket;
 import com.knoxcorner.banticket.ban.Ban;
 import com.knoxcorner.banticket.ban.HistoryEvent;
 import com.knoxcorner.banticket.ban.HistoryEvent.BanType;
+import com.knoxcorner.banticket.ban.IpBan;
 
 public class PlayerListener implements Listener
 {
@@ -53,9 +54,9 @@ public class PlayerListener implements Listener
 			btpl = pl.getPlayerSaveManager().loadPlayer(ple.getUniqueId(), ple.getAddress().getHostAddress());
 		}
 		
-		Ban ban;
+		Ban ban = btpl.getBans().getActiveBan();
 		btpl.getBans().update(btpl.getCommonIps());
-		if((ban = btpl.getBans().getActiveBan()) != null)
+		if(ban != null)
 		{
 			pl.getLogger().info(ple.getName() + " tried to join, but is banned by BanTicket.");
 			//pl.bannedPlayersCache.add(btpl);
@@ -65,10 +66,15 @@ public class PlayerListener implements Listener
 				HistoryEvent he = new HistoryEvent(BanType.INFO, "Player connected");
 				he.setExtraInfo("Player is currently banned.");
 				btpl.addHistory(he);
-				btpl.save();
 			}
-			return;
 		}
+		IpBan ipban = pl.getIpBanManager().getBan(ple.getAddress().getHostAddress());
+		if(ipban != null)
+		{
+			//TODO: option to ban accounts from IP if IP banned
+			ple.disallow(AsyncPlayerPreLoginEvent.Result.KICK_BANNED, ipban.getBanMessage());
+		}
+		
 		
 		if(pl.getConfigManager().getLogLogins())
 		{

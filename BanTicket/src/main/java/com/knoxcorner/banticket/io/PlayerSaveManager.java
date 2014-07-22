@@ -34,6 +34,7 @@ public class PlayerSaveManager
 	private BanTicket pl;
 	private File saveFolder;
 	
+	private final static byte BTPLAYER_SAVE_VERSION = 1;
 	private final static byte MAX_BAN_LINES = 7;
 	private final static byte MAX_HISTORY_LINES = 4;
 	
@@ -95,13 +96,36 @@ public class PlayerSaveManager
 			return null;
 		}
 		
+		byte version = -1;
 		LinkedHashMap<String, Integer> ips = null;
 		LinkedHashMap<Long, String> prevNames = null;
 		BanList banList = null;
 		LinkedList<HistoryEvent> history = null;
 		for(int line = 0; line < buffer.size(); line++) //TODO: versioning
 		{
-			if(buffer.get(line).equals("IP TABLE:"))
+			if(buffer.get(line).startsWith("VERSION: "))
+			{
+				String[] parts = buffer.get(line).split(" ");
+				if(parts.length < 2)
+				{
+					pl.getLogger().warning('"' + buffer.get(line) + "\": Could not read verion on line " + line + " of " + file.getPath());
+					pl.getLogger().warning("Assuming version " + BTPLAYER_SAVE_VERSION);
+					version = BTPLAYER_SAVE_VERSION;
+				}
+				else
+				{
+					try
+					{
+						version = Byte.parseByte(parts[1]);
+					} catch (NumberFormatException nfe)
+					{
+						pl.getLogger().warning('"' + buffer.get(line) + "\": Could not read verion on line " + line + " of " + file.getPath());
+						pl.getLogger().warning("Assuming version " + BTPLAYER_SAVE_VERSION);
+						version = BTPLAYER_SAVE_VERSION;
+					}
+				}
+			}
+			else if(buffer.get(line).equals("IP TABLE:"))
 			{
 				ips = this.loadIps(line + 1, buffer, file);
 			}
@@ -138,6 +162,10 @@ public class PlayerSaveManager
 		{
 			pl.getLogger().severe("History failed to load in file " + file.getPath());
 			return null;
+		}
+		if(version < BTPLAYER_SAVE_VERSION)
+		{
+			//Conversion
 		}
 
 		
@@ -623,9 +651,10 @@ public class PlayerSaveManager
 			pl.getLogger().throwing(getClass().getName(), "savePlayer", ioe);
 			return;
 		}
-		
-		
 		LinkedList<String> buffer = new LinkedList<String>();
+		
+		buffer.add("VERSION: " + BTPLAYER_SAVE_VERSION);
+		
 		buffer.add("IP TABLE:");
 
 		for(Map.Entry<String, Integer> entry : player.getIpMap().entrySet())

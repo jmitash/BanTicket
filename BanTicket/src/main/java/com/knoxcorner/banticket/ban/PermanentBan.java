@@ -2,6 +2,7 @@ package com.knoxcorner.banticket.ban;
 
 import com.knoxcorner.banticket.BanTicket;
 import com.knoxcorner.banticket.ban.HistoryEvent.BanType;
+import com.knoxcorner.banticket.util.Util;
 
 import java.util.List;
 import java.util.UUID;
@@ -46,17 +47,19 @@ public class PermanentBan extends Ban
 			{
 				//TODO: Existing ban check
 				
-				//Waiting on UUID support
-				/*Iterator<BanEntry> bei = BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).getBanEntries().iterator();
-				while(bei.hasNext())
-				{
-					BanEntry be = bei.next();
-					if(be.getUuid().equals(this.getUUID())
-				}*/
 				for(int i = 0; i < ipsorname.size(); i++)
 				{
 					BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).pardon(ipsorname.get(i));
 				}
+
+				
+				
+				IpBan ipban = new IpBan(ipsorname, this.getReason(), this.getInfo(), -1,
+						this.getUUID(), this.getBannerUUID(), false,
+						BanTicket.banTicket.getConfigManager().getExpireTime() + System.currentTimeMillis(),
+						BanTicket.banTicket.getConfigManager().getApproveOnExpire());
+				BanTicket.banTicket.getIpBanManager().removeBan(ipban);
+				
 				return 0;
 			}
 			else
@@ -94,15 +97,22 @@ public class PermanentBan extends Ban
 			
 			if(this.isIpBan())
 			{
-				for(int i = 0; i < ipsorname.size(); i++)
+				if(BanTicket.banTicket.getConfigManager().getSaveToMinecraft())
 				{
-					BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).addBan(
-							ipsorname.get(i),
-							this.getReason(),
-							null,
-							banSource);
+					for(int i = 0; i < ipsorname.size(); i++)
+					{
+						BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).addBan(
+								ipsorname.get(i),
+								this.getReason(),
+								null,
+								banSource);
+					}
 				}
-				return 0;
+				IpBan ipban = new IpBan(ipsorname, this.getReason(), this.getInfo(), -1,
+						this.getUUID(), this.getBannerUUID(), false,
+						BanTicket.banTicket.getConfigManager().getExpireTime() + System.currentTimeMillis(),
+						BanTicket.banTicket.getConfigManager().getApproveOnExpire());
+				return BanTicket.banTicket.getIpBanManager().add(ipban);
 			}
 			else
 			{
