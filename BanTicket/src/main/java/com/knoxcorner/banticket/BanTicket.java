@@ -14,6 +14,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.knoxcorner.banticket.ban.Ban;
+import com.knoxcorner.banticket.ban.HistoryEvent;
+import com.knoxcorner.banticket.ban.HistoryEvent.BanType;
 import com.knoxcorner.banticket.ban.IpBan;
 import com.knoxcorner.banticket.ban.PermanentBan;
 import com.knoxcorner.banticket.ban.PermanentBanRequest;
@@ -605,6 +608,114 @@ public class BanTicket extends JavaPlugin
 				}
 			}
 		}
+			
+		/////////////   \\\\\\\\\\\
+		//////////// BTP \\\\\\\\\\\
+		
+		if(cmd.getName().equalsIgnoreCase("btp"))
+		{
+			if(args.length == 0)
+			{
+				s.sendMessage(HELP[1][1]);
+				return true;
+			}
+			
+			if(isIp(args[0]))
+			{
+				IpBan ipban = null;
+				try
+				{
+					ipban = this.getIpBanManager().getBan(args[0]);
+				} catch (Exception e)
+				{
+					if(e.getMessage().equals("Ban expired"))
+					{
+						s.sendMessage(ChatColor.RED + "That ban has already expired!");
+						return true;
+					}
+					if(e.getMessage().equals("Ban over"))
+					{
+						s.sendMessage(ChatColor.RED + "That ban has already ended!");
+						return true;
+					}
+				}
+				if(ipban == null)
+				{
+					s.sendMessage(ChatColor.RED + "No banned IPs found for " + args[0]);
+					return true;
+				}
+				
+				this.getIpBanManager().removeBan(ipban);
+				s.sendMessage(ChatColor.GREEN + "IPs unbanned: " + ipban.getIps().toString());
+				
+				if(ipban.getUUID() != null)
+				{
+					BTPlayer banned = this.getPlayerSaveManager().loadPlayer(ipban.getUUID());
+					if(banned == null)
+					{
+						s.sendMessage(ChatColor.GREEN + "A UUID was attached to that ban, but the save file is missing.");
+						return true;
+					}
+					Ban ban = banned.getBans().getActiveBan();
+					if(ban == null)
+					{
+						s.sendMessage(ChatColor.GREEN + "Tried to unban " + banned.getMostRecentName() + " but his/her save is not banned.");
+						return true;
+					}
+					ban.setOnServerBanList(false, banned.getCommonIps());
+					banned.getBans().remove(ban);
+					HistoryEvent he = new HistoryEvent(BanType.INFO, "Unbanned");
+					if(sPlayer == null)
+						he.setExtraInfo("By CONSOLE");
+					else
+						he.setExtraInfo(sPlayer.getName() + " | " + sPlayer.getUniqueId().toString());
+					banned.addHistory(he);
+					banned.save();
+					s.sendMessage(ChatColor.GREEN + banned.getMostRecentName() + " is now unbanned.");
+					return true;
+				}
+			}
+			else
+			{
+				OfflinePlayer[] posPlayer = Util.findPossibleOfflinePlayers(args[0]);
+				if(posPlayer.length == 0)
+				{
+					s.sendMessage(ChatColor.RED + "No players found with name " + args[0]);
+					return true;
+				}
+				if(posPlayer.length > 1)
+				{
+					s.sendMessage(ChatColor.RED + "Found more than one player with name " + args[0]);
+					return true;
+				}
+				OfflinePlayer op = posPlayer[0];
+				BTPlayer player = this.getPlayerSaveManager().loadPlayer(op.getUniqueId());
+				if(player == null)
+				{
+					s.sendMessage(ChatColor.RED + "Player is missing save file. Ban will still be removed from server.");
+					this.getServer().getBanList(BanList.Type.NAME).pardon(args[0]);
+					return true;
+				}
+				else
+				{
+					Ban ban = player.getBans().getActiveBan();
+					if(ban != null)
+					{
+						player.getBans().remove(ban);
+						ban.setOnServerBanList(false, player.getCommonIps());
+						player.save();
+						s.sendMessage(ChatColor.GREEN + args[0] + " is now unbanned!");
+						return true;
+					}
+					else
+					{
+						s.sendMessage(ChatColor.RED + args[0] + " doesn't appear to be banned!");
+						return true;
+					}
+				}
+			}
+		}
+		
 		
 		return true;
 	}
@@ -687,7 +798,8 @@ public class BanTicket extends JavaPlugin
 				ChatColor.GREEN + "/btw <player> <warning>" + ChatColor.DARK_GREEN + ": Warn player"
 			},
 			{
-				ChatColor.GREEN + "/btinfo <Info>" + ChatColor.DARK_GREEN + ": Attach info to previous warn/ban"
+				ChatColor.GREEN + "/btinfo <Info>" + ChatColor.DARK_GREEN + ": Attach info to previous warn/ban",
+				ChatColor.GREEN + "/btp <player/IP>" + ChatColor.DARK_GREEN + ": Unban given player/IP"
 			}
 			
 		};

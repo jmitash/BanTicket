@@ -111,10 +111,8 @@ public class PermanentBanRequest extends PermanentBan implements Expirable
 			}
 			else
 			{
-				for(int i = 0; i < ipsorname.size(); i++)
-				{
+				if(ipsorname != null && ipsorname.size() >= 1)
 					BanTicket.banTicket.getServer().getBanList(BanList.Type.NAME).pardon(ipsorname.get(0));
-				}
 				return 0;
 			}
 		}

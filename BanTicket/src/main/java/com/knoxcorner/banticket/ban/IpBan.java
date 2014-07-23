@@ -90,7 +90,7 @@ public class IpBan
 	
 	public boolean isOver()
 	{
-		return System.currentTimeMillis() > this.endTime
+		return !this.isPermanent && System.currentTimeMillis() > this.endTime
 				|| (this.isRequest && !this.approveOnExpire && System.currentTimeMillis() > this.expireTime);
 	}
 	

@@ -54,12 +54,8 @@ public class PlayerSaveManager
 		return new File(saveFolder, uuid.toString() + ".dat").exists();
 	}
 	
-	public BTPlayer loadPlayer(UUID uuid)
-	{
-		return loadPlayer(uuid, null);
-	}
 	
-	public BTPlayer loadPlayer(UUID uuid, String ip)
+	public BTPlayer loadPlayer(UUID uuid)
 	{
 		File file = new File(saveFolder, uuid.toString() + ".dat");
 		if(!file.exists())

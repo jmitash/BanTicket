@@ -51,7 +51,8 @@ public class PlayerListener implements Listener
 		}
 		else
 		{
-			btpl = pl.getPlayerSaveManager().loadPlayer(ple.getUniqueId(), ple.getAddress().getHostAddress());
+			btpl = pl.getPlayerSaveManager().loadPlayer(ple.getUniqueId());
+			btpl.addIP(ple.getAddress().getHostAddress());
 		}
 		
 		Ban ban = btpl.getBans().getActiveBan();
@@ -68,7 +69,14 @@ public class PlayerListener implements Listener
 				btpl.addHistory(he);
 			}
 		}
-		IpBan ipban = pl.getIpBanManager().getBan(ple.getAddress().getHostAddress());
+		IpBan ipban = null;
+		try
+		{
+			ipban = pl.getIpBanManager().getBan(ple.getAddress().getHostAddress());
+		} catch (Exception e)
+		{
+			//Not banned (anymore)
+		}
 		if(ipban != null)
 		{
 			//TODO: option to ban accounts from IP if IP banned
@@ -94,6 +102,7 @@ public class PlayerListener implements Listener
 		BTPlayer btpl;
 		if((btpl = pl.removePlayer(pqe.getPlayer().getUniqueId())) != null)
 		{
+			pl.getLogger().info(btpl.getMostRecentName());
 			if(pl.getConfigManager().getLogDisconnect())
 			{
 				HistoryEvent he = new HistoryEvent(BanType.INFO, "Player disconnected");

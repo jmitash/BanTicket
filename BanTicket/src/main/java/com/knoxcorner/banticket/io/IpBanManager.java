@@ -48,12 +48,19 @@ public class IpBanManager
 		ipBans = new ArrayList<IpBan>();
 	}
 	
-	public synchronized IpBan getBan(String ip)
+	public synchronized IpBan getBan(String ip) throws Exception
 	{
 		for(IpBan ipban : ipBans)
 		{
 			if(ipban.getIps().contains(ip))
 			{
+				
+				if(ipban.isOver())
+				{
+					this.removeBan(ipban);
+					throw new Exception("Ban over");
+				}
+				
 				if(ipban.isExpired())
 				{
 					this.removeBan(ipban);
@@ -64,15 +71,10 @@ public class IpBanManager
 						return ipban;
 					}
 					else
-						return null;
+					{
+						throw new Exception("Ban expired");
+					}
 				}
-				
-				if(ipban.isOver())
-				{
-					this.removeBan(ipban);
-					return null;
-				}
-					
 				
 				return ipban;
 			}
@@ -80,7 +82,7 @@ public class IpBanManager
 		return null;
 	}
 	
-	public synchronized IpBan getBan(List<String> ips)
+	public synchronized IpBan getBan(List<String> ips) throws Exception
 	{
 		IpBan temp;
 		for(String ip : ips)
@@ -91,18 +93,20 @@ public class IpBanManager
 		return null;
 	}
 	
-	public synchronized void removeBan(IpBan ban)
+	public synchronized byte removeBan(IpBan ban)
 	{
+		boolean foundBan = false;
 		for(int i = 0; i < this.ipBans.size(); i++)
 		{
 			if(ipBans.get(i).getIps().containsAll(ban.getIps()))
 			{
 				ipBans.remove(i);
+				foundBan = true;
 				break;
 			}
-			if(i == this.ipBans.size() - 1)
-				return;
 		}
+		if(!foundBan)
+			return 1;
 		
 		Scanner in;
 		try
@@ -112,7 +116,7 @@ public class IpBanManager
 		{
 			pl.getLogger().severe("ipbans.dat appears to exist, but Scanner threw exception.");
 			pl.getLogger().throwing(this.getClass().getName(), "load", e);
-			return;
+			return 2;
 		}
 		
 		List<String> buffer = new ArrayList<String>(10);
@@ -150,7 +154,7 @@ public class IpBanManager
 		{
 			pl.getLogger().severe("Error while trying to overwrite " + file.getName()); 
 			e.printStackTrace();
-			return;
+			return 2;
 		}
 		
 		try
@@ -159,7 +163,6 @@ public class IpBanManager
 			{
 				
 					fOut.write(buffer.get(i) + "\n");
-				
 			}
 			
 			fOut.close();
@@ -167,20 +170,41 @@ public class IpBanManager
 		{
 			pl.getLogger().severe("Error while trying to write to " + file.getName());
 			e.printStackTrace();
+			return 2;
 		}
 		
-		
-		
-
+		return 0;
 	}
 	
-	
+	/**
+	 * Adds ban to ban list and saves
+	 * @param ban the IpBan to add
+	 * @return 0 - Success<br>1 - Already banned<br>2 - Error saving
+	 */
 	public synchronized byte addBan(IpBan ban)
 	{
 		for(IpBan ipban : ipBans)
 		{
-			if(Collections.disjoint(ipban.getIps(), ban.getIps())) //Any in common
-				return 1;
+			if(!Collections.disjoint(ipban.getIps(), ban.getIps())) //Any in common
+			{
+				if(ipban.isOver())
+				{
+					this.removeBan(ipban);
+					break;
+				}
+				if(ipban.isExpired())
+				{
+					this.removeBan(ipban);
+					ipban = ipban.expire();
+					if(ipban == null) 
+						break; //Ban is over, continue on
+					else
+					{
+						this.addBan(ipban);
+						return 1;
+					}
+				}
+			}
 		}
 		
 		this.ipBans.add(ban);
@@ -220,7 +244,7 @@ public class IpBanManager
 		{
 			pl.getLogger().severe("Could not write to " + file.getName());
 			pl.getLogger().throwing(this.getClass().getName(), "add", e);
-			return 0; //TODO: 
+			return 2; //TODO: 
 		}
 		
 		return 0;

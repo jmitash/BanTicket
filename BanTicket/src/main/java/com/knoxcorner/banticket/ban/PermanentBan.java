@@ -48,8 +48,9 @@ public class PermanentBan extends Ban
 				//TODO: Existing ban check
 				
 				for(int i = 0; i < ipsorname.size(); i++)
-				{
-					BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).pardon(ipsorname.get(i));
+				{	
+					if(BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).isBanned(ipsorname.get(i)))
+						BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).pardon(ipsorname.get(i));
 				}
 
 				
@@ -65,8 +66,9 @@ public class PermanentBan extends Ban
 			else
 			{
 				for(int i = 0; i < ipsorname.size(); i++)
-				{
-					BanTicket.banTicket.getServer().getBanList(BanList.Type.NAME).pardon(ipsorname.get(0));
+				{	
+					if(BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).isBanned(ipsorname.get(i)))
+						BanTicket.banTicket.getServer().getBanList(BanList.Type.IP).pardon(ipsorname.get(i));
 				}
 				return 0;
 			}
