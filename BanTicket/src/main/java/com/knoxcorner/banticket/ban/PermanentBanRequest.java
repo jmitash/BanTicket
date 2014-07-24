@@ -194,4 +194,14 @@ public class PermanentBanRequest extends PermanentBan implements Expirable
 				+ "after " + Util.msToTime(startTime + expireTime - System.currentTimeMillis())
 				+ ".\n\n" + super.getBanMessage();
 	}
+
+	public long getSoonestEndTime()
+	{
+		return this.expireTime + this.startTime;
+	}
+
+	public Ban accept()
+	{
+		return new PermanentBan(this.getUUID(), this.getReason(), Util.getDate() + " Approved; " + this.getInfo(), this.getBannerUUID(), this.isIpBan());
+	}
 }

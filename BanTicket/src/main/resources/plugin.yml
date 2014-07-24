@@ -24,6 +24,9 @@ commands:
     btw:
         description: Displays BanTicket related commands
         usage: /bt <subcategory> <applicaple arguments>
+    btr:
+        description: Displays BanTicket related commands
+        usage: /bt <subcategory> <applicaple arguments>
     btinfo:
         description: Displays BanTicket related commands
         usage: /bt <subcategory> <applicaple arguments>

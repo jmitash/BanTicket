@@ -216,4 +216,17 @@ public class TemporaryBanRequest extends TemporaryBan implements Expirable
 				+ ".\n\n" + super.getBanMessage();
 	}
 
+	public long getSoonestEndTime()
+	{
+		if(this.expireTime + this.startTime < this.getEndTime())
+			return this.startTime + this.expireTime;
+		else
+			return this.getEndTime();
+	}
+
+	public Ban accept()
+	{
+		return new TemporaryBan(this.getUUID(), this.getReason(), Util.getDate() + " Accepted; " + this.getInfo(), this.getBannerUUID(), this.isIpBan(), this.getEndTime());
+	}
+
 }

@@ -11,6 +11,7 @@ import com.knoxcorner.banticket.ban.Ban;
 import com.knoxcorner.banticket.ban.HistoryEvent;
 import com.knoxcorner.banticket.ban.HistoryEvent.BanType;
 import com.knoxcorner.banticket.ban.IpBan;
+import com.knoxcorner.banticket.user.BTPlayer;
 
 public class PlayerListener implements Listener
 {

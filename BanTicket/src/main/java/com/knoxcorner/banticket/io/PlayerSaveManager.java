@@ -25,7 +25,7 @@ import com.knoxcorner.banticket.ban.PermanentBan;
 import com.knoxcorner.banticket.ban.PermanentBanRequest;
 import com.knoxcorner.banticket.ban.TemporaryBan;
 import com.knoxcorner.banticket.ban.TemporaryBanRequest;
-import com.knoxcorner.banticket.listener.BTPlayer;
+import com.knoxcorner.banticket.user.BTPlayer;
 import com.knoxcorner.banticket.util.BanList;
 import com.knoxcorner.banticket.util.Util;
 

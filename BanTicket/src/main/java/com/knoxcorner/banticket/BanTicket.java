@@ -15,6 +15,7 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.knoxcorner.banticket.ban.Ban;
+import com.knoxcorner.banticket.ban.Expirable;
 import com.knoxcorner.banticket.ban.HistoryEvent;
 import com.knoxcorner.banticket.ban.HistoryEvent.BanType;
 import com.knoxcorner.banticket.ban.IpBan;
@@ -25,8 +26,10 @@ import com.knoxcorner.banticket.ban.TemporaryBanRequest;
 import com.knoxcorner.banticket.io.ConfigManager;
 import com.knoxcorner.banticket.io.IpBanManager;
 import com.knoxcorner.banticket.io.PlayerSaveManager;
-import com.knoxcorner.banticket.listener.BTPlayer;
+import com.knoxcorner.banticket.io.RequestBanManager;
 import com.knoxcorner.banticket.listener.PlayerListener;
+import com.knoxcorner.banticket.user.BTConsole;
+import com.knoxcorner.banticket.user.BTPlayer;
 import com.knoxcorner.banticket.util.Util;
 
 public class BanTicket extends JavaPlugin
@@ -37,6 +40,8 @@ public class BanTicket extends JavaPlugin
 	private PlayerSaveManager playerSaveManager;
 	private PlayerListener listener;
 	private IpBanManager ipBanManager;
+	private RequestBanManager reqBanMgr;
+	private BTConsole console;
 	
 	private volatile List<BTPlayer> players;
 	private volatile List<BTPlayer> bannedPlayersCache;
@@ -47,6 +52,7 @@ public class BanTicket extends JavaPlugin
 		//TODO: Check enable while running
 		
 		banTicket = this;
+		console = new BTConsole();
 		cm = new ConfigManager(this);
 		playerSaveManager = new PlayerSaveManager(this);
 		this.ipBanManager = new IpBanManager(this);
@@ -54,8 +60,9 @@ public class BanTicket extends JavaPlugin
 		listener = new PlayerListener(this);
 		players = new ArrayList<BTPlayer>();
 		bannedPlayersCache = new ArrayList<BTPlayer>();
-		getIpBanManager().load();
-		
+		ipBanManager.load();
+		reqBanMgr = new RequestBanManager(this);
+		reqBanMgr.load();
 	}
 	
 	@Override
@@ -68,6 +75,9 @@ public class BanTicket extends JavaPlugin
 		players = null;
 		bannedPlayersCache.clear();
 		bannedPlayersCache = null;
+		reqBanMgr.save();
+		reqBanMgr = null;
+		console = null;
 	}
 	
 	public PlayerSaveManager getPlayerSaveManager()
@@ -399,8 +409,10 @@ public class BanTicket extends JavaPlugin
 								true);
 						boolean success = handleBanError(s, player.addBan(pbr), player);
 						player.save();
+						
 						if(success)
 						{
+							reqBanMgr.addBan(pbr);
 							s.sendMessage(ChatColor.GREEN + "Banning IP(s): " + player.getCommonIps().toString());
 							s.sendMessage(ChatColor.GREEN + player.getMostRecentName() + " is now IP banned.");
 							s.sendMessage(ChatColor.GREEN + "This ban will expire in " + Util.msToTime(this.getConfigManager().getExpireTime()) + " without approval.");
@@ -408,6 +420,7 @@ public class BanTicket extends JavaPlugin
 						return true;
 					}
 				} //Not online
+				/*
 				IpBan ipban = new IpBan(Util.newList(args[0]), reason, null, -1,
 						null, sPlayer == null ? null : sPlayer.getUniqueId(), true,
 						this.getConfigManager().getExpireTime() + System.currentTimeMillis(),
@@ -415,6 +428,8 @@ public class BanTicket extends JavaPlugin
 				this.getIpBanManager().addBan(ipban);
 				s.sendMessage(ChatColor.GREEN + args[0] + " is now IP banned.");
 				s.sendMessage(ChatColor.GREEN + "This ban will expire in " + Util.msToTime(this.getConfigManager().getExpireTime()) + " without approval.");
+				return true;*/
+				s.sendMessage(ChatColor.RED + "Cannot ban IPs only in ban requests yet.");
 				return true;
 			}
 			else //Player name
@@ -431,8 +446,10 @@ public class BanTicket extends JavaPlugin
 								false);
 						boolean success = handleBanError(s, player.addBan(pbr), player);
 						player.save();
+						
 						if(success)
 						{
+							reqBanMgr.addBan(pbr);
 							s.sendMessage(ChatColor.GREEN + player.getMostRecentName() + " is now banned.");
 							s.sendMessage(ChatColor.GREEN + "This ban will expire in " + Util.msToTime(this.getConfigManager().getExpireTime()) + " without approval.");
 						}
@@ -460,10 +477,12 @@ public class BanTicket extends JavaPlugin
 								null,
 								s instanceof Player ? ((Player) s).getUniqueId() : null,
 								false);
+						
 						boolean success = handleBanError(s, btpl.addBan(pbr), btpl);
 						btpl.save();
 						if(success)
 						{
+							reqBanMgr.addBan(pbr);
 							s.sendMessage(ChatColor.GREEN + btpl.getMostRecentName() + " (offline) is now banned.");
 							s.sendMessage(ChatColor.GREEN + "This ban will expire in " + Util.msToTime(this.getConfigManager().getExpireTime()) + " without approval.");
 						}
@@ -523,8 +542,10 @@ public class BanTicket extends JavaPlugin
 								System.currentTimeMillis() + length);
 						boolean success = handleBanError(s, player.addBan(tbr), player);
 						player.save();
+						
 						if(success)
 						{
+							reqBanMgr.addBan(tbr);
 							s.sendMessage(ChatColor.GREEN + "Banning IP(s): " + player.getCommonIps().toString());
 							s.sendMessage(ChatColor.GREEN + player.getMostRecentName() + " is now IP banned for " + args[1] + ".");
 							s.sendMessage(ChatColor.GREEN + "This ban will expire in " + Util.msToTime(this.getConfigManager().getExpireTime()) + " without approval.");
@@ -532,13 +553,15 @@ public class BanTicket extends JavaPlugin
 						return true;
 					}
 				} //Not online
-				IpBan ipban = new IpBan(Util.newList(args[0]), reason, null, System.currentTimeMillis() + length,
+				/*IpBan ipban = new IpBan(Util.newList(args[0]), reason, null, System.currentTimeMillis() + length,
 						null, sPlayer == null ? null : sPlayer.getUniqueId(), true,
 						this.getConfigManager().getExpireTime() + System.currentTimeMillis(),
 						this.getConfigManager().getApproveOnExpire());
 				this.getIpBanManager().addBan(ipban);
 				s.sendMessage(ChatColor.GREEN + args[0] + " is now IP banned for " + args[1] + ".");
 				s.sendMessage(ChatColor.GREEN + "This ban will expire in " + Util.msToTime(this.getConfigManager().getExpireTime()) + " without approval.");
+				return true;*/
+				s.sendMessage(ChatColor.RED + "Cannot ban IPs only in ban requests yet.");
 				return true;
 			}
 			else //Player name
@@ -556,8 +579,10 @@ public class BanTicket extends JavaPlugin
 								System.currentTimeMillis() + length);
 						boolean success = handleBanError(s, player.addBan(tbr), player);
 						player.save();
+						
 						if(success)
 						{
+							reqBanMgr.addBan(tbr);
 							s.sendMessage(ChatColor.GREEN + player.getMostRecentName() + " is now banned for " + args[1] + ".");
 							s.sendMessage(ChatColor.GREEN + "This ban will expire in " + Util.msToTime(this.getConfigManager().getExpireTime()) + " without approval.");
 						}
@@ -590,6 +615,7 @@ public class BanTicket extends JavaPlugin
 						btpl.save();
 						if(success)
 						{
+							reqBanMgr.addBan(tbr);
 							s.sendMessage(ChatColor.GREEN + btpl.getMostRecentName() + " (offline) was banned.");
 							s.sendMessage(ChatColor.GREEN + "This ban will expire in " + Util.msToTime(this.getConfigManager().getExpireTime()) + " without approval.");
 						}
@@ -672,8 +698,9 @@ public class BanTicket extends JavaPlugin
 					banned.addHistory(he);
 					banned.save();
 					s.sendMessage(ChatColor.GREEN + banned.getMostRecentName() + " is now unbanned.");
-					return true;
 				}
+				
+				return true;
 			}
 			else
 			{
@@ -698,12 +725,15 @@ public class BanTicket extends JavaPlugin
 				}
 				else
 				{
+					player.getBans().update(player.getCommonIps());
 					Ban ban = player.getBans().getActiveBan();
 					if(ban != null)
 					{
 						player.getBans().remove(ban);
 						ban.setOnServerBanList(false, player.getCommonIps());
 						player.save();
+						if(ban instanceof Expirable)
+							reqBanMgr.removeBan((Expirable) ban);
 						s.sendMessage(ChatColor.GREEN + args[0] + " is now unbanned!");
 						return true;
 					}
@@ -716,6 +746,78 @@ public class BanTicket extends JavaPlugin
 			}
 		}
 		
+		
+		/////////////   \\\\\\\\\\\
+		//////////// BTR \\\\\\\\\\\
+		if(cmd.getName().equalsIgnoreCase("btr"))
+		{
+			if(args.length == 0)
+			{
+				if(sPlayer != null)
+				{
+					for(BTPlayer btpl : this.players)
+					{
+						if(btpl.getUUID().equals(sPlayer.getUniqueId()))
+						{
+							btpl.sendFormattedReviews(s);
+							return true;
+						}
+					}
+					s.sendMessage(ChatColor.RED + "You are not the console, but not in the player list either!");
+					return true;
+				}
+				else
+				{
+					this.console.sendFormattedReviews(s);
+					return true;
+				}
+			}
+			
+			if(args.length < 2)
+			{
+				s.sendMessage(HELP[1][2]);
+				return true;
+			}
+			
+			int num = -1;
+			try
+			{
+				num = Integer.parseInt(args[0]);
+			}
+			catch (NumberFormatException nfe)
+			{
+				s.sendMessage(ChatColor.RED + args[0] + " is not a valid number");
+				return true;
+			}
+			
+			if(!args[1].startsWith("a") && !args[1].startsWith("d"))
+			{
+				s.sendMessage(HELP[1][2]);
+				return true;
+			}
+			
+			boolean accept = args[1].startsWith("a");
+			
+			if(sPlayer != null)
+			{
+				for(BTPlayer btpl : this.players)
+				{
+					if(btpl.getUUID().equals(sPlayer.getUniqueId()))
+					{
+						btpl.handleBanReview(num, accept, s);
+						return true;
+					}
+				}
+				s.sendMessage(ChatColor.RED + "You are not the console, but not in the player list either!");
+				return true;
+			}
+			else
+			{
+				this.console.handleBanReview(num, accept, s);
+				return true;
+			}
+			
+		}
 		
 		return true;
 	}
@@ -781,11 +883,11 @@ public class BanTicket extends JavaPlugin
 	{
 		return ipBanManager;
 	}
-
-
-
-
-
+	
+	public RequestBanManager getRequestBanManager()
+	{
+		return this.reqBanMgr;
+	}
 
 	private final static String[][] HELP = 
 		{
@@ -799,7 +901,8 @@ public class BanTicket extends JavaPlugin
 			},
 			{
 				ChatColor.GREEN + "/btinfo <Info>" + ChatColor.DARK_GREEN + ": Attach info to previous warn/ban",
-				ChatColor.GREEN + "/btp <player/IP>" + ChatColor.DARK_GREEN + ": Unban given player/IP"
+				ChatColor.GREEN + "/btp <player/IP>" + ChatColor.DARK_GREEN + ": Unban given player/IP",
+				ChatColor.GREEN + "/btr <num> <a/d>" + ChatColor.DARK_GREEN + ": Review ban requests"
 			}
 			
 		};
