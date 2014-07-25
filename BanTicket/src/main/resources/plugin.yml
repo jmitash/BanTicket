@@ -5,28 +5,48 @@ description: Versatile and thorough ban management system
 commands:
     bt:
         description: Displays BanTicket related commands
-        usage: /bt <subcategory> <applicaple arguments>
+        usage: /bt <page #>
+        permission: banticket.bt
     btb:
-        description: Displays BanTicket related commands
-        usage: /bt <subcategory> <applicaple arguments>
+        description: Permanently bans player
+        usage: /btb <player/IP> <reason>
+        permission: banticket.btb
     bttb:
-        description: Displays BanTicket related commands
-        usage: /bt <subcategory> <applicaple arguments>
+        description: Temporarily bans player
+        usage: /bttb <player/IP> <length> <reason>
+        permission: banticket.bttb
     btbr:
-        description: Displays BanTicket related commands
-        usage: /bt <subcategory> <applicaple arguments>
+        description: Places a permanent ban request
+        usage: /btbr <player> <reason>
+        permission: banticket.btbr
     bttbr:
-        description: Displays BanTicket related commands
-        usage: /bt <subcategory> <applicaple arguments>
+        description: Places a temporary ban request
+        usage: /bttbr <player> <length> <reason>
+        permission: banticket.bttbr
     btp:
-        description: Displays BanTicket related commands
-        usage: /bt <subcategory> <applicaple arguments>
+        description: Pardons a banned player or IP
+        usage: /btp <player/IP> <reason>
+        permission: banticket.btp
     btw:
-        description: Displays BanTicket related commands
-        usage: /bt <subcategory> <applicaple arguments>
+        description: Gives and logs a warning to a player
+        usage: /btw <player> <warning message>
+        permission: banticket.btw
     btr:
-        description: Displays BanTicket related commands
-        usage: /bt <subcategory> <applicaple arguments>
-    btinfo:
-        description: Displays BanTicket related commands
-        usage: /bt <subcategory> <applicaple arguments>
+        description: Review ban requests
+        usage: /bt <ban ID> <approve/deny>
+        permission: banticket.btr
+    bti:
+        description: Attatches extra info to last given ban/warn
+        usage: /bti <player/IP>
+        permission: banticket.bti
+    btv:
+        description: View a player's history
+        usage: /btv <player> <bans/history>
+        permission: banticket.btv
+#More specific permissions:
+#banticket.btb.ip - Permaban IP
+#banticket.bttb.ip - Tempban IP
+#banticket.btbr.ip - Request permaban IP (Not yet implemented)
+#banticket.bttbr.ip - Request tempban IP (Not yet implemented)
+#banticket.notify.warn
+#banticket.notify.ban
