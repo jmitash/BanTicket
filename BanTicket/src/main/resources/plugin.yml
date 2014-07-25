@@ -5,48 +5,28 @@ description: Versatile and thorough ban management system
 commands:
     bt:
         description: Displays BanTicket related commands
-        usage: /bt <page #>
-        permission: banticket.bt
+        usage: /bt <subcategory> <applicaple arguments>
     btb:
-        description: Permanently bans player
-        usage: /btb <player/IP> <reason>
-        permission: banticket.btb
+        description: Displays BanTicket related commands
+        usage: /bt <subcategory> <applicaple arguments>
     bttb:
-        description: Temporarily bans player
-        usage: /bttb <player/IP> <length> <reason>
-        permission: banticket.bttb
+        description: Displays BanTicket related commands
+        usage: /bt <subcategory> <applicaple arguments>
     btbr:
-        description: Places a permanent ban request
-        usage: /btbr <player> <reason>
-        permission: banticket.btbr
+        description: Displays BanTicket related commands
+        usage: /bt <subcategory> <applicaple arguments>
     bttbr:
-        description: Places a temporary ban request
-        usage: /bttbr <player> <length> <reason>
-        permission: banticket.bttbr
+        description: Displays BanTicket related commands
+        usage: /bt <subcategory> <applicaple arguments>
     btp:
-        description: Pardons a banned player or IP
-        usage: /btp <player/IP> <reason>
-        permission: banticket.btp
+        description: Displays BanTicket related commands
+        usage: /bt <subcategory> <applicaple arguments>
     btw:
-        description: Gives and logs a warning to a player
-        usage: /btw <player> <warning message>
-        permission: banticket.btw
+        description: Displays BanTicket related commands
+        usage: /bt <subcategory> <applicaple arguments>
     btr:
-        description: Review ban requests
-        usage: /bt <ban ID> <approve/deny>
-        permission: banticket.btr
-    bti:
-        description: Attatches extra info to last given ban/warn
-        usage: /bti <player/IP>
-        permission: banticket.bti
-    btv:
-        description: View a player's history
-        usage: /btv <player> <bans/history>
-        permission: banticket.btv
-#More specific permissions:
-#banticket.btb.ip - Permaban IP
-#banticket.bttb.ip - Tempban IP
-#banticket.btbr.ip - Request permaban IP (Not yet implemented)
-#banticket.bttbr.ip - Request tempban IP (Not yet implemented)
-#banticket.notify.warn
-#banticket.notify.ban
+        description: Displays BanTicket related commands
+        usage: /bt <subcategory> <applicaple arguments>
+    btinfo:
+        description: Displays BanTicket related commands
+        usage: /bt <subcategory> <applicaple arguments>

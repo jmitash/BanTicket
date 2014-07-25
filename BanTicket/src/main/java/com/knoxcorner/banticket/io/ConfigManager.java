@@ -25,8 +25,6 @@ public class ConfigManager
 	private int minLoginsFromIp;
 	private int minNumTotalLogins;
 	private boolean saveToMinecraft;
-	private boolean broadcastWarn;
-	private boolean broadcastBan;
 	
 	public ConfigManager(BanTicket plugin)
 	{
@@ -66,8 +64,8 @@ public class ConfigManager
 		this.minLoginsFromIp = config.getInt("MinLoginsFromIPToBan", 0);
 		this.minNumTotalLogins = config.getInt("MinNumTotalLogins", 0);
 		this.saveToMinecraft = config.getBoolean("PutBansOnMinecraftFile", false);
-		this.broadcastWarn = config.getBoolean("BroadcastWarnings", false);
-		this.broadcastBan = config.getBoolean("BroadcastBans", false);
+		
+		
 	}
 	
 	public void saveConfig()
@@ -137,16 +135,6 @@ public class ConfigManager
 	public boolean getSaveToMinecraft()
 	{
 		return this.saveToMinecraft;
-	}
-	
-	public boolean broadcastWarnings()
-	{
-		return this.broadcastWarn;
-	}
-	
-	public boolean broadcastBans()
-	{
-		return this.broadcastBan;
 	}
 
 }
