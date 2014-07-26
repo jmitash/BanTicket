@@ -98,18 +98,6 @@ public class HistoryEvent
 		return calendar;
 	}
 	
-	public String getFormattedLabel()
-	{
-		String label = String.format("Type: %s; Date: %tD %tl:%tM %tp", this.eventType, calendar, calendar, calendar, calendar);
-		if(this.eventType == BanType.TEMPBAN || this.eventType == BanType.TEMPBANREQ)
-		{
-			label += "; Length: ";
-			label += Util.msToTime(this.banTime);
-		}
-		
-		return label;
-	}
-	
 	public long getBanTime()
 	{
 		return this.banTime;

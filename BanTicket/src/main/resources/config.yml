@@ -11,6 +11,11 @@ ExpireTime: 2d0h0m0s
 #Note: This value follows the ban, meaning changes made after the ban is filed will not affect it
 ApproveOnExpire: false
 
+#Sets whether to broadcast warnings to all players
+BroadcastWarnings: false
+
+#Sets whether to broadcast bans to all players
+BroadcastBans: false
 
 
 ########################

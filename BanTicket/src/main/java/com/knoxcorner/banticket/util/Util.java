@@ -9,34 +9,17 @@ import java.util.List;
 import java.util.Map;
 
 import com.knoxcorner.banticket.BanTicket;
+import com.knoxcorner.banticket.user.BTPlayer;
 
+import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 public class Util
 {
 	private static BanTicket banTicket = BanTicket.banTicket;
 
-	/**
-	 * Finds a Player entity by name if he/she is online
-	 * @param name of player to search for
-	 * @return Player if found, otherwise null
-	 */
-	public static Player findOnlinePlayer(String name)
-	{
-		Player[] pls = banTicket.getServer().getOnlinePlayers();
-		Player player = null;
-		for(int i = 0; i < pls.length; i++)
-		{
-			if(pls[i].getName().equalsIgnoreCase(name))
-			{
-				player = pls[i];
-				break;
-			}
-		}
-		
-		return player;
-	}
 	
 	/**
 	 * Finds all previously-joined players via given name, and returns them in descending order of most recent join time
@@ -200,7 +183,12 @@ public class Util
 	
 	public static String getDate()
 	{
-		return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+		return getDate(System.currentTimeMillis());
+	}
+	
+	public static String getDate(long l)
+	{
+		return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(l));
 	}
 
 	public static List<String> getCommonIps(HashMap<String, Integer> ipMap)
@@ -243,6 +231,89 @@ public class Util
 		ArrayList<String> strs = new ArrayList<String>(1);
 		strs.add(str);
 		return strs;
+	}
+
+	public static String compoundString(String[] args, int offset)
+	{
+		String s = "";
+		for(int i = offset; i < args.length; i++)
+		{
+			s += args[i];
+			if(i < args.length - 1)
+				s += " ";
+		}
+		return s;
+	}
+
+	public static boolean isIp(String s)
+	{
+		for(int i = 0; i < s.length() - 1; i++)
+		{
+			if(!"0123456789.".contains(s.substring(i, i+1)))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	public static boolean handleBanError(CommandSender cs, byte err, BTPlayer player)
+	{
+		switch(err)
+		{
+		case 0: return true;
+		case 1: cs.sendMessage(ChatColor.GREEN + player.getMostRecentName() + " doesn't have a Bukkit save file, but will be banned on join."); return true;
+		case 2: cs.sendMessage(ChatColor.RED + player.getMostRecentName() + " is already banned by Bukkit."); return false;
+		case 3: cs.sendMessage(ChatColor.RED + player.getMostRecentName() + " is already banned by BanTicket."); return false;
+		}
+		return false;
+	}
+
+	public static int parseInt(String is, CommandSender s)
+	{
+		int num = -1;
+		for(int i = 0; i < is.length(); i++)
+		{
+			//if()
+		}
+		try
+		{
+			num = Integer.parseInt(is);
+		} catch (NumberFormatException nfe)
+		{
+			s.sendMessage(ChatColor.RED +"\"" + is + "\" is not a valid number.");
+			return -1;
+		}
+		return num;
+	}
+	
+	public static Player findOnlinePlayer(String name)
+	{
+		for (Player pl : BanTicket.banTicket.getServer().getOnlinePlayers()) {
+			if (pl.getName().equalsIgnoreCase(name)) {
+				return pl;
+			}
+		}
+		return null;
+	}
+	
+	public static BTPlayer findBTPlayer(String name)
+	{
+		for(BTPlayer btpl : BanTicket.banTicket.getBTPlayers())
+		{
+			if(btpl.getMostRecentName().equalsIgnoreCase(name))
+				return btpl;
+		}
+		
+		OfflinePlayer[] posPlay = Util.findPossibleOfflinePlayers(name);
+		
+		if(posPlay.length == 1)
+		{
+			return BanTicket.banTicket.getPlayerSaveManager().loadPlayer(posPlay[0].getUniqueId());
+		}
+		//TODO: Handle multiple possible layers
+		
+		return null;
 	}
 	
 

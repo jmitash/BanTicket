@@ -133,6 +133,9 @@ public class BTConsole implements Reviewer
 			renewBan.setOnServerBanList(true, btpl.getCommonIps());
 			BanTicket.banTicket.getRequestBanManager().removeBan(e);
 			cs.sendMessage(ChatColor.GREEN + "Ban approved. Use /btr to refresh the list");
+		    BanTicket.banTicket.notify("banticket.notify.ban",
+		    		ChatColor.DARK_GREEN + "CONSOLE has approved " + btpl.getMostRecentName() + "'s ban",
+		    		false);
 		}
 		else
 		{
@@ -149,6 +152,9 @@ public class BTConsole implements Reviewer
 			BanTicket.banTicket.getRequestBanManager().removeBan(e);
 			
 			cs.sendMessage(ChatColor.GREEN + "Ban denied. Use /btr to refresh the list");
+		    BanTicket.banTicket.notify("banticket.notify.ban",
+		    		ChatColor.DARK_GREEN + "CONSOLE has denied " + btpl.getMostRecentName() + "'s ban",
+		    		false);
 		}
 	}
 	

@@ -63,6 +63,44 @@ public class BanTicket extends JavaPlugin
 		ipBanManager.load();
 		reqBanMgr = new RequestBanManager(this);
 		reqBanMgr.load();
+		
+		for(Player pl : this.getServer().getOnlinePlayers())
+		{
+			BTPlayer btpl = playerSaveManager.loadPlayer(pl.getUniqueId());
+			if(btpl == null)
+			{
+				btpl = new BTPlayer(pl.getUniqueId(), pl.getAddress().getAddress().getHostAddress(), pl.getName());
+			}
+			else
+			{
+				btpl.addIP(pl.getAddress().getAddress().getHostAddress());
+			}
+			btpl.save();
+			
+			btpl.getBans().update(btpl.getCommonIps());
+			if(btpl.getBans().getActiveBan() != null)
+			{
+				pl.kickPlayer(btpl.getBans().getActiveBan().getBanMessage());
+				continue;
+			}
+			
+			IpBan ipban = null;
+			
+			try
+			{
+				ipban = this.ipBanManager.getBan(pl.getAddress().getAddress().getHostAddress());
+			} catch (Exception e) {
+				//No longer banned
+			}
+			
+			if(ipban != null)
+			{
+				pl.kickPlayer(ipban.getBanMessage());
+				continue;
+			}
+			
+			this.players.add(btpl);
+		}
 	}
 	
 	@Override
@@ -132,7 +170,7 @@ public class BanTicket extends JavaPlugin
 			int page = 0;
 			if(args.length > 0)
 			{
-				page = parseInt(args[0], s) - 1;
+				page = Util.parseInt(args[0], s) - 1;
 				if(page == -1)
 				{
 					//More command checking
@@ -168,11 +206,16 @@ public class BanTicket extends JavaPlugin
 			String reason = "No reason given.";
 			if(args.length > 1)
 			{
-				reason = compoundString(args, 1);
+				reason = Util.compoundString(args, 1);
 			}
 			
-			if(isIp(args[0]))
+			if(Util.isIp(args[0]))
 			{
+				if(!s.hasPermission("banticket.btb.ip"))
+				{
+					s.sendMessage(ChatColor.RED + "You don't have permission to permaban IPs!");
+					return true;
+				}
 				for(BTPlayer player : players)
 				{
 					if(player.getLastIp().equals(args[0]))
@@ -182,16 +225,22 @@ public class BanTicket extends JavaPlugin
 								null,
 								s instanceof Player ? ((Player) s).getUniqueId() : null,
 								true);
-						boolean success = handleBanError(s, player.addBan(pb), player);
+						boolean success = Util.handleBanError(s, player.addBan(pb), player);
 						player.save();
 						if(success)
 						{
+							notify("banticket.notify.ban", 
+									ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has IP permabanned " + player.getCommonIps().toString() + " for: " + reason,
+									this.getConfigManager().broadcastBans());
 							s.sendMessage(ChatColor.GREEN + "Banning IP(s): " + player.getCommonIps().toString());
 							s.sendMessage(ChatColor.GREEN + player.getMostRecentName() + " is now IP banned");
 						}
 						return true;
 					}
 				}
+				notify("banticket.notify.ban", 
+						ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has permabanned " + args[0] + " for: " + reason,
+						this.getConfigManager().broadcastBans());
 				IpBan ipban = new IpBan(Util.newList(args[0]), reason, null, -1, null, sPlayer == null ? null : sPlayer.getUniqueId(), false, -1, false);
 				this.getIpBanManager().addBan(ipban);
 				s.sendMessage(ChatColor.GREEN + args[0] + " is now IP banned");
@@ -209,10 +258,13 @@ public class BanTicket extends JavaPlugin
 								null,
 								s instanceof Player ? ((Player) s).getUniqueId() : null,
 								false);
-						boolean success = handleBanError(s, player.addBan(pb), player);
+						boolean success = Util.handleBanError(s, player.addBan(pb), player);
 						player.save();
 						if(success)
 						{
+							notify("banticket.notify.ban", 
+									ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has permabanned " + args[0] + " for: " + reason,
+									this.getConfigManager().broadcastBans());
 							s.sendMessage(ChatColor.GREEN + player.getMostRecentName() + " is now banned.");
 						}
 						return true;
@@ -239,16 +291,22 @@ public class BanTicket extends JavaPlugin
 								null,
 								s instanceof Player ? ((Player) s).getUniqueId() : null,
 								false);
-						boolean success = handleBanError(s, btpl.addBan(pb), btpl);
+						boolean success = Util.handleBanError(s, btpl.addBan(pb), btpl);
 						btpl.save();
 						if(success)
 						{
+							notify("banticket.notify.ban", 
+									ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has permabanned " + args[0] + " for: " + reason,
+									this.getConfigManager().broadcastBans());
 							s.sendMessage(ChatColor.GREEN + btpl.getMostRecentName() + " (offline) is now banned.");
 						}
 						return true;
 					}
 					else //DNE on our side
 					{
+						notify("banticket.notify.ban", 
+								ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has permabanned " + args[0] + " for: " + reason,
+								this.getConfigManager().broadcastBans());
 						s.sendMessage(ChatColor.GREEN + args[0] + " has no history on BanTicket; banning on Bukkit only");
 						this.getServer().getBanList(BanList.Type.NAME).addBan(args[0], reason, null, s.getName());
 						if(posPlay[0].getPlayer() != null)
@@ -283,11 +341,16 @@ public class BanTicket extends JavaPlugin
 			String reason = "No reason given.";
 			if(args.length > 2)
 			{
-				reason = compoundString(args, 2);
+				reason = Util.compoundString(args, 2);
 			}
 			
-			if(isIp(args[0]))
+			if(Util.isIp(args[0]))
 			{
+				if(!s.hasPermission("banticket.bttb.ip"))
+				{
+					s.sendMessage(ChatColor.RED + "You don't have permission to permaban IPs!");
+					return true;
+				}
 				for(BTPlayer player : players)
 				{
 					if(player.getLastIp().equals(args[0]))
@@ -298,10 +361,13 @@ public class BanTicket extends JavaPlugin
 								s instanceof Player ? ((Player) s).getUniqueId() : null,
 								true,
 								length + System.currentTimeMillis());
-						boolean success = handleBanError(s, player.addBan(tb), player);
+						boolean success = Util.handleBanError(s, player.addBan(tb), player);
 						player.save();
 						if(success)
 						{
+							notify("banticket.notify.ban", 
+									ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has IP tempbanned " + player.getCommonIps().toString() + " for " + args[1] + ": " + reason,
+									this.getConfigManager().broadcastBans());
 							s.sendMessage(ChatColor.GREEN + "Banning IP(s): " + player.getCommonIps().toString());
 							s.sendMessage(ChatColor.GREEN + player.getMostRecentName() + " is now IP banned for " + args[1] + ".");
 						}
@@ -312,6 +378,9 @@ public class BanTicket extends JavaPlugin
 						null, sPlayer == null ? null : sPlayer.getUniqueId(), false, -1, false);
 				this.getIpBanManager().addBan(ipban);
 				s.sendMessage(ChatColor.GREEN + args[0] + " is now IP banned for " + args[1] + ".");
+				notify("banticket.notify.ban", 
+						ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has tempbanned " + ipban.getIps().toString() + " for " + args[1] + ": " + reason,
+						this.getConfigManager().broadcastBans());
 				return true;
 			}
 			else //Player name
@@ -327,10 +396,13 @@ public class BanTicket extends JavaPlugin
 								s instanceof Player ? ((Player) s).getUniqueId() : null,
 								false,
 								length + System.currentTimeMillis());
-						boolean success = handleBanError(s, player.addBan(tb), player);
+						boolean success = Util.handleBanError(s, player.addBan(tb), player);
 						player.save();
 						if(success)
 						{
+							notify("banticket.notify.ban", 
+									ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has tempbanned " + args[0] + " for " + args[1] + ": " + reason,
+									this.getConfigManager().broadcastBans());
 							s.sendMessage(ChatColor.GREEN + player.getMostRecentName() + " is now banned for " + args[1] + ".");
 						}
 						return true;
@@ -358,16 +430,22 @@ public class BanTicket extends JavaPlugin
 								s instanceof Player ? ((Player) s).getUniqueId() : null,
 								true,
 								length + System.currentTimeMillis());
-						boolean success = handleBanError(s, btpl.addBan(tb), btpl);
+						boolean success = Util.handleBanError(s, btpl.addBan(tb), btpl);
 						btpl.save();
 						if(success)
 						{
+							notify("banticket.notify.ban", 
+									ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has tempbanned " + args[0] + " for " + args[1] + ": " + reason,
+									this.getConfigManager().broadcastBans());
 							s.sendMessage(ChatColor.GREEN + btpl.getMostRecentName() + " (offline) is now banned.");
 						}
 						return true;
 					}
 					else //DNE on our side
 					{
+						notify("banticket.notify.ban", 
+								ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has tempbanned " + args[0] + " for " + args[1] + ": " + reason,
+								this.getConfigManager().broadcastBans());
 						s.sendMessage(ChatColor.GREEN + args[0] + " has no history on BanTicket; banning on Bukkit only");
 						this.getServer().getBanList(BanList.Type.NAME).addBan(args[0], reason, null, s.getName());
 						if(posPlay[0].getPlayer() != null)
@@ -393,12 +471,12 @@ public class BanTicket extends JavaPlugin
 			String reason = "No reason given.";
 			if(args.length > 1)
 			{
-				reason = compoundString(args, 1);
+				reason = Util.compoundString(args, 1);
 			}
 			
-			if(isIp(args[0]))
+			if(Util.isIp(args[0]))
 			{
-				for(BTPlayer player : players)
+				/*for(BTPlayer player : players)
 				{
 					if(player.getLastIp().equals(args[0]))
 					{
@@ -407,11 +485,14 @@ public class BanTicket extends JavaPlugin
 								null,
 								s instanceof Player ? ((Player) s).getUniqueId() : null,
 								true);
-						boolean success = handleBanError(s, player.addBan(pbr), player);
+						boolean success = Util.handleBanError(s, player.addBan(pbr), player);
 						player.save();
 						
 						if(success)
 						{
+							notify("banticket.notify.ban", 
+									ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has requested a permaban on " + args[0] + " for: " + reason,
+									this.getConfigManager().broadcastBans());
 							reqBanMgr.addBan(pbr);
 							s.sendMessage(ChatColor.GREEN + "Banning IP(s): " + player.getCommonIps().toString());
 							s.sendMessage(ChatColor.GREEN + player.getMostRecentName() + " is now IP banned.");
@@ -444,11 +525,14 @@ public class BanTicket extends JavaPlugin
 								null,
 								s instanceof Player ? ((Player) s).getUniqueId() : null,
 								false);
-						boolean success = handleBanError(s, player.addBan(pbr), player);
+						boolean success = Util.handleBanError(s, player.addBan(pbr), player);
 						player.save();
 						
 						if(success)
 						{
+							notify("banticket.notify.ban", 
+									ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has requested a permaban on " + args[0] + " for: " + reason,
+									this.getConfigManager().broadcastBans());
 							reqBanMgr.addBan(pbr);
 							s.sendMessage(ChatColor.GREEN + player.getMostRecentName() + " is now banned.");
 							s.sendMessage(ChatColor.GREEN + "This ban will expire in " + Util.msToTime(this.getConfigManager().getExpireTime()) + " without approval.");
@@ -478,10 +562,13 @@ public class BanTicket extends JavaPlugin
 								s instanceof Player ? ((Player) s).getUniqueId() : null,
 								false);
 						
-						boolean success = handleBanError(s, btpl.addBan(pbr), btpl);
+						boolean success = Util.handleBanError(s, btpl.addBan(pbr), btpl);
 						btpl.save();
 						if(success)
 						{
+							notify("banticket.notify.ban", 
+									ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has requested a permaban on " + args[0] + " for: " + reason,
+									this.getConfigManager().broadcastBans());
 							reqBanMgr.addBan(pbr);
 							s.sendMessage(ChatColor.GREEN + btpl.getMostRecentName() + " (offline) is now banned.");
 							s.sendMessage(ChatColor.GREEN + "This ban will expire in " + Util.msToTime(this.getConfigManager().getExpireTime()) + " without approval.");
@@ -490,6 +577,9 @@ public class BanTicket extends JavaPlugin
 					}
 					else //DNE on our side
 					{
+						notify("banticket.notify.ban", 
+								ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has requested a permaban on " + args[0] + " for: " + reason,
+								this.getConfigManager().broadcastBans());
 						s.sendMessage(ChatColor.GREEN + args[0] + " has no history on BanTicket; banning on Bukkit only");
 						s.sendMessage(ChatColor.GREEN + "This ban will expire in " + Util.msToTime(this.getConfigManager().getExpireTime()) + " without approval.");
 						this.getServer().getBanList(BanList.Type.NAME).addBan(args[0], reason, null, s.getName());
@@ -525,11 +615,12 @@ public class BanTicket extends JavaPlugin
 			String reason = "No reason given.";
 			if(args.length > 2)
 			{
-				reason = compoundString(args, 2);
+				reason = Util.compoundString(args, 2);
 			}
 			
-			if(isIp(args[0]))
+			if(Util.isIp(args[0]))
 			{
+				/*
 				for(BTPlayer player : players)
 				{
 					if(player.getLastIp().equals(args[0]))
@@ -540,11 +631,14 @@ public class BanTicket extends JavaPlugin
 								s instanceof Player ? ((Player) s).getUniqueId() : null,
 								true,
 								System.currentTimeMillis() + length);
-						boolean success = handleBanError(s, player.addBan(tbr), player);
+						boolean success = Util.handleBanError(s, player.addBan(tbr), player);
 						player.save();
 						
 						if(success)
 						{
+							notify("banticket.notify.ban", 
+									ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has requested a tempban on " + args[0] + " for " + args[1] + " with reason: " + reason,
+									this.getConfigManager().broadcastBans());
 							reqBanMgr.addBan(tbr);
 							s.sendMessage(ChatColor.GREEN + "Banning IP(s): " + player.getCommonIps().toString());
 							s.sendMessage(ChatColor.GREEN + player.getMostRecentName() + " is now IP banned for " + args[1] + ".");
@@ -577,11 +671,14 @@ public class BanTicket extends JavaPlugin
 								s instanceof Player ? ((Player) s).getUniqueId() : null,
 								false,
 								System.currentTimeMillis() + length);
-						boolean success = handleBanError(s, player.addBan(tbr), player);
+						boolean success = Util.handleBanError(s, player.addBan(tbr), player);
 						player.save();
 						
 						if(success)
 						{
+							notify("banticket.notify.ban", 
+									ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has requested a tempban on " + args[0] + " for " + args[1] + " with reason: " + reason,
+									this.getConfigManager().broadcastBans());
 							reqBanMgr.addBan(tbr);
 							s.sendMessage(ChatColor.GREEN + player.getMostRecentName() + " is now banned for " + args[1] + ".");
 							s.sendMessage(ChatColor.GREEN + "This ban will expire in " + Util.msToTime(this.getConfigManager().getExpireTime()) + " without approval.");
@@ -611,10 +708,13 @@ public class BanTicket extends JavaPlugin
 								s instanceof Player ? ((Player) s).getUniqueId() : null,
 								false,
 								System.currentTimeMillis() + length);
-						boolean success = handleBanError(s, btpl.addBan(tbr), btpl);
+						boolean success = Util.handleBanError(s, btpl.addBan(tbr), btpl);
 						btpl.save();
 						if(success)
 						{
+							notify("banticket.notify.ban", 
+									ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has requested a tempban on " + args[0] + " for " + args[1] + " with reason: " + reason,
+									this.getConfigManager().broadcastBans());
 							reqBanMgr.addBan(tbr);
 							s.sendMessage(ChatColor.GREEN + btpl.getMostRecentName() + " (offline) was banned.");
 							s.sendMessage(ChatColor.GREEN + "This ban will expire in " + Util.msToTime(this.getConfigManager().getExpireTime()) + " without approval.");
@@ -623,6 +723,9 @@ public class BanTicket extends JavaPlugin
 					}
 					else //DNE on our side
 					{
+						notify("banticket.notify.ban", 
+								ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has requested a tempban on " + args[0] + " for " + args[1] + " with reason: " + reason,
+								this.getConfigManager().broadcastBans());
 						s.sendMessage(ChatColor.GREEN + args[0] + " has no history on BanTicket; banning on Bukkit only");
 						s.sendMessage(ChatColor.GREEN + "This ban will expire in " + Util.msToTime(this.getConfigManager().getExpireTime()) + " without approval.");
 						this.getServer().getBanList(BanList.Type.NAME).addBan(args[0], reason, null, s.getName());
@@ -646,7 +749,7 @@ public class BanTicket extends JavaPlugin
 				return true;
 			}
 			
-			if(isIp(args[0]))
+			if(Util.isIp(args[0]))
 			{
 				IpBan ipban = null;
 				try
@@ -664,6 +767,8 @@ public class BanTicket extends JavaPlugin
 						s.sendMessage(ChatColor.RED + "That ban has already ended!");
 						return true;
 					}
+					s.sendMessage(ChatColor.RED + "Unexpected exception");
+					return true;
 				}
 				if(ipban == null)
 				{
@@ -673,6 +778,9 @@ public class BanTicket extends JavaPlugin
 				
 				this.getIpBanManager().removeBan(ipban);
 				s.sendMessage(ChatColor.GREEN + "IPs unbanned: " + ipban.getIps().toString());
+				notify("banticket.notify.ban", 
+						ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has pardoned IPs: " + ipban.getIps().toString(),
+						false);
 				
 				if(ipban.getUUID() != null)
 				{
@@ -698,6 +806,9 @@ public class BanTicket extends JavaPlugin
 					banned.addHistory(he);
 					banned.save();
 					s.sendMessage(ChatColor.GREEN + banned.getMostRecentName() + " is now unbanned.");
+					notify("banticket.notify.ban", 
+							ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has pardoned " + banned.getMostRecentName(),
+							false);
 				}
 				
 				return true;
@@ -719,6 +830,9 @@ public class BanTicket extends JavaPlugin
 				BTPlayer player = this.getPlayerSaveManager().loadPlayer(op.getUniqueId());
 				if(player == null)
 				{
+					notify("banticket.notify.ban", 
+							ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has pardoned " + args[0],
+							false);
 					s.sendMessage(ChatColor.RED + "Player is missing save file. Ban will still be removed from server.");
 					this.getServer().getBanList(BanList.Type.NAME).pardon(args[0]);
 					return true;
@@ -734,6 +848,9 @@ public class BanTicket extends JavaPlugin
 						player.save();
 						if(ban instanceof Expirable)
 							reqBanMgr.removeBan((Expirable) ban);
+						notify("banticket.notify.ban", 
+								ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has pardoned " + args[0],
+								false);
 						s.sendMessage(ChatColor.GREEN + args[0] + " is now unbanned!");
 						return true;
 					}
@@ -819,65 +936,133 @@ public class BanTicket extends JavaPlugin
 			
 		}
 		
-		return true;
-	}
-	
-	private static int parseInt(String is, CommandSender s)
-	{
-		int num = -1;
-		for(int i = 0; i < is.length(); i++)
+		////////  \\\\\\\
+		////// BTW \\\\\\
+		if (cmd.getName().equalsIgnoreCase("btw"))
 		{
-			//if()
-		}
-		try
-		{
-			num = Integer.parseInt(is);
-		} catch (NumberFormatException nfe)
-		{
-			s.sendMessage(ChatColor.RED +"\"" + is + "\" is not a valid number.");
-			return -1;
-		}
-		return num;
-	}
-	
-	private static String compoundString(String[] args, int offset)
-	{
-		String s = "";
-		for(int i = offset; i < args.length; i++)
-		{
-			s += args[i];
-			if(i < args.length - 1)
-				s += " ";
-		}
-		return s;
-	}
-	
-	private static boolean isIp(String s)
-	{
-		for(int i = 0; i < s.length() - 1; i++)
-		{
-			if(!"0123456789.".contains(s.substring(i, i+1)))
+			BTPlayer btpl;
+			if (args.length == 0)
 			{
-				return false;
+				s.sendMessage(HELP[0][5]);
+				return true;
 			}
+			if (args.length == 1)
+			{
+				s.sendMessage(ChatColor.RED + "You must provide a warning message!");
+				return true;
+			}
+			btpl = findPlayer(args[0]);
+			if (btpl == null)
+			{
+				s.sendMessage(ChatColor.RED + args[0] + " must be online to receive a warning.");
+				return true;
+			}
+			String reason = Util.compoundString(args, 1);
+
+			HistoryEvent he = new HistoryEvent(HistoryEvent.BanType.WARN, reason);
+			he.setExtraInfo("Warned by " + (sPlayer == null ? "CONSOLE" : new StringBuilder(String.valueOf(sPlayer.getName())).append(" : ").append(sPlayer.getUniqueId().toString()).toString()));
+			btpl.addHistory(he);
+			btpl.save();
+
+			Player pl = Util.findOnlinePlayer(args[0]);
+			if (pl == null)
+			{
+				s.sendMessage(ChatColor.RED + args[0] + " was in BanTicket's player list, but not the server's!");
+				s.sendMessage(ChatColor.RED + "The warning will still be saved on their profile, but they won't receive the message if they're online");
+				return true;
+			}
+			notify("banticket.notify.warn", 
+					ChatColor.DARK_GREEN + (sPlayer == null ? "CONSOLE" : sPlayer.getName()) + " has warned " + pl.getName() + ": " + reason,
+					this.getConfigManager().broadcastWarnings());
+		}
+		
+		
+		////////  \\\\\\\
+		////// BTV \\\\\\
+		if(cmd.getName().equalsIgnoreCase("btv"))
+		{
+			BTPlayer btpl;
+			if (args.length == 0)
+			{
+				s.sendMessage(HELP[1][3]);
+				return true;
+			}
+			if (args.length >= 1)
+			{
+				btpl = findPlayer(args[0]);
+				if(btpl == null)
+				{
+					OfflinePlayer[] posPlay = Util.findPossibleOfflinePlayers(args[0]);
+					if(posPlay.length == 0)
+					{
+						s.sendMessage(ChatColor.RED + "No players found with name " + args[0]);
+						return true;
+					}
+					else if(posPlay.length == 1)
+					{
+						btpl = this.getPlayerSaveManager().loadPlayer(posPlay[0].getUniqueId());
+						if(btpl == null)
+						{
+							s.sendMessage(ChatColor.RED + "That player doesn't have a BanTicket file");
+							return true;
+						}
+					}
+					else
+					{
+						s.sendMessage(ChatColor.RED + "There's more than one player with that name (unfinished)");
+						return true;
+					}
+				}
+				
+				for(HistoryEvent he : btpl.getHistory())
+				{
+					s.sendMessage(ChatColor.DARK_GREEN + he.getEventType().toString() + " " + Util.getDate(he.getCalendar().getTimeInMillis()));
+					s.sendMessage(ChatColor.GREEN + "Event: " + he.getEvent());
+					s.sendMessage(ChatColor.GREEN + "Info: " + he.getExtraInfo());
+				}
+				return true;
+				
+			}
+			
+			return true;
+		}
+		
+		////////  \\\\\\\
+		////// BTRW \\\\\\
+		if(cmd.getName().equalsIgnoreCase("btwr"))
+		{
+			if(args.length == 0)
+			{
+				s.sendMessage(HELP[1][4]);
+				return true;
+			}
+			
+			BTPlayer btpl = Util.findBTPlayer(args[0]);
+			if(btpl == null)
+			{
+				s.sendMessage(ChatColor.RED + "Could not find player " + args[0]);
+				return true;
+			}
+			
+			for(int i = btpl.getHistory().size() - 1; i >= 0; i--)
+			{
+				if(btpl.getHistory().get(i).getEventType() == BanType.WARN)
+				{
+					HistoryEvent he = btpl.getHistory().remove(i);
+					s.sendMessage(ChatColor.GREEN + "Removed warning: " + he.getEvent());
+					return true;
+				}
+			}
+			
+			s.sendMessage(ChatColor.RED + "No warnings found for " + args[0]);
+			
+			return true;
+			
 		}
 		return true;
 	}
-	
-	private static boolean handleBanError(CommandSender cs, byte err, BTPlayer player)
-	{
-		switch(err)
-		{
-		case 0: return true;
-		case 1: cs.sendMessage(ChatColor.GREEN + player.getMostRecentName() + " doesn't have a Bukkit save file, but will be banned on join."); return true;
-		case 2: cs.sendMessage(ChatColor.RED + player.getMostRecentName() + " is already banned by Bukkit."); return false;
-		case 3: cs.sendMessage(ChatColor.RED + player.getMostRecentName() + " is already banned by BanTicket."); return false;
-		}
-		return false;
-	}
-	
-	
-	
+
+		
 	
 	public IpBanManager getIpBanManager()
 	{
@@ -888,6 +1073,22 @@ public class BanTicket extends JavaPlugin
 	{
 		return this.reqBanMgr;
 	}
+	
+	public void notify(String perm, String msg, boolean dontUsePerm)
+	{
+		for(Player pl : this.getServer().getOnlinePlayers())
+		{
+			if(dontUsePerm || pl.hasPermission(perm))
+			{
+				pl.sendMessage(msg);
+			}
+		}
+	}
+	
+	public synchronized List<BTPlayer> getBTPlayers()
+	{
+		return this.players;
+	}
 
 	private final static String[][] HELP = 
 		{
@@ -895,14 +1096,16 @@ public class BanTicket extends JavaPlugin
 				ChatColor.GREEN + "/bt <page #>" + ChatColor.DARK_GREEN + ": Open help page",
 				ChatColor.GREEN + "/btb <player/IP> <reason>" + ChatColor.DARK_GREEN + ": Permaban player/IP",
 				ChatColor.GREEN + "/bttb <player/IP> <time> <reason>" + ChatColor.DARK_GREEN + ": Tempban for (0d0h0m0s)",
-				ChatColor.GREEN + "/btbr <player/IP> <reason>" + ChatColor.DARK_GREEN + ": Request for player/IP",
+				ChatColor.GREEN + "/btbr <player/IP> <reason>" + ChatColor.DARK_GREEN + ": Request permaban for player/IP",
 				ChatColor.GREEN + "/bttbr <player/IP> <time> <reason>" + ChatColor.DARK_GREEN + ": Request tempban for (0d0h0m0s)",
 				ChatColor.GREEN + "/btw <player> <warning>" + ChatColor.DARK_GREEN + ": Warn player"
 			},
 			{
-				ChatColor.GREEN + "/btinfo <Info>" + ChatColor.DARK_GREEN + ": Attach info to previous warn/ban",
+				ChatColor.GREEN + "/bti <Info>" + ChatColor.DARK_GREEN + ": Attach info to previous warn/ban",
 				ChatColor.GREEN + "/btp <player/IP>" + ChatColor.DARK_GREEN + ": Unban given player/IP",
-				ChatColor.GREEN + "/btr <num> <a/d>" + ChatColor.DARK_GREEN + ": Review ban requests"
+				ChatColor.GREEN + "/btr <num> <a/d>" + ChatColor.DARK_GREEN + ": Review ban requests",
+				ChatColor.GREEN + "/btv <player>" + ChatColor.DARK_GREEN + ": View player history",
+				ChatColor.GREEN + "/btwr <player>" + ChatColor.DARK_GREEN + ": Remove last warning"
 			}
 			
 		};
